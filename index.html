@@ -66,7 +66,7 @@
   <div class="presets"><button data-h="8">Morning</button><button data-h="12.5">Noon</button><button data-h="16.9">Sunset</button><button data-h="21.5">Night</button></div>
 </div>
 <div id="room" class="chip"></div>
-<canvas id="mini" width="180" height="226"></canvas>
+<canvas id="mini" width="200" height="232"></canvas>
 <div id="overlay"><div id="card">
   <h1>Dahan Residence</h1>
   <p>Front door to master bedroom, in first person. Rooms, doors and windows follow the furniture plan; interior sizes are scaled from the drawing.</p>
@@ -92,7 +92,7 @@ const ipx=x=>x/S+X0, ipy=z=>z/S+Y0;
 /* rooms: r=[x0,y0,x1,y1] on wall centre-lines */
 const ROOMS=[
  {id:'ensuite',name:'En-suite',r:[402,612,482,697],floor:'bath',wall:'#d9d6cf'},
- {id:'living',name:'Living · Dining · Kitchen',r:[482,397,778,658],floor:'concrete',wall:'#efe9de'},
+ {id:'living',name:'Living · Dining · Kitchen',r:[482,397,837,711],dims:[6.93,6.04],floor:'concrete',wall:'#efe9de'},
  {id:'hall',name:'Hall',r:[482,282,566,397],floor:'concrete',wall:'#ece6db'},
  {id:'corridor',name:'Corridor',r:[436,282,482,541],floor:'concrete',wall:'#eeeae2'},
  {id:'baby',name:'Baby room',r:[436,108,566,282],floor:'concrete',wall:'#d2dfd0'},
@@ -101,7 +101,7 @@ const ROOMS=[
  {id:'flex',name:'Room (unfurnished in plan)',r:[270,424,436,541],floor:'concrete',wall:'#f0ece4'},
  {id:'master',name:'Master bedroom',r:[270,541,482,697],floor:'concrete',wall:'#ddd3c5'},
  {id:'svc',name:'Service balcony',r:[222,305,297,424],floor:'outdoor',wall:'#d8d2c6',open:true},
- {id:'balc',name:'Balcony',r:[580,658,778,790],floor:'outdoor',wall:'#e6dfd2',open:true}
+ {id:'balc',name:'Balcony',r:[639,711,837,843],floor:'outdoor',wall:'#e6dfd2',open:true}
 ];
 const ROOM={};ROOMS.forEach(r=>ROOM[r.id]=r);
 function roomAt(x,y){for(const r of ROOMS){const q=r.r;if(x>=q[0]&&x<q[2]&&y>=q[1]&&y<q[3])return r;}return null;}
@@ -131,8 +131,8 @@ Vw(222,305,424,EXT,[],{hgt:1.3});
 Hw(305,222,297,EXT,[],{hgt:1.3});
 /* corridor, flex room, master, en-suite */
 Vw(482,282,541,INT,[gap(300,392)]);
-Vw(482,541,658,INT);
-Vw(482,658,697,EXT);
+Vw(482,541,697,INT);
+Vw(482,697,711,EXT);
 Hw(541,270,482,INT,[door(440,480,'b',-1)]);
 Hw(697,270,482,EXT,[win(298,392)]);
 Vw(270,424,541,EXT,[win(455,515)]);
@@ -141,9 +141,9 @@ Vw(402,612,697,INT);
 Hw(612,402,482,INT,[door(406,446,'a',1)]);
 /* hall / living */
 Hw(397,478,566,INT,[door(518,558,'b',-1)]);
-Hw(397,566,782,EXT,[door(722,768,'b',1)]);
-Vw(778,397,658,EXT,[]);
-Hw(658,478,782,EXT,[win(523,575,1.15,2.1),slider(585,762)]);
+Hw(397,566,837,EXT,[door(722,768,'b',1)]);
+Vw(837,397,711,EXT,[]);
+Hw(711,478,837,EXT,[win(523,575,1.15,2.1),slider(644,821)]);
 
 /* ===================== RENDERER / SCENE ===================== */
 const canvas=document.getElementById('c');
@@ -479,7 +479,7 @@ function railing(x0,z0,x1,z1){
   for(let i=0;i<=n;i++)B(g,.04,1.1,.04,-len/2+len*i/n,0,0,MAT.steel);
   addBox(Math.min(x0,x1)-.06,Math.min(z0,z1)-.06,Math.max(x0,x1)+.06,Math.max(z0,z1)+.06);
 }
-{const a=wx(580),b=wx(778),c=wz(658),d=wz(790);
+{const a=wx(639),b=wx(837),c=wz(711),d=wz(843);
  railing(a,c,a,d);railing(a,d,b,d);railing(b,d,b,c);}
 
 /* ===================== SKY, CITY, LIGHT ===================== */
@@ -520,7 +520,7 @@ const cityG=new THREE.Group();scene.add(cityG);
 scene.fog=new THREE.Fog('#dde7ee',70,330);
 const hemi=new THREE.HemisphereLight('#cfe2f6','#c9b99c',.5);scene.add(hemi);
 const sun=new THREE.DirectionalLight('#fff0dc',3.6);
-const CTR=new THREE.Vector3(-.4,0,1.6);
+const CTR=new THREE.Vector3(.3,0,1.8);
 sun.position.set(CTR.x-20,CTR.y+30,CTR.z+22);sun.target.position.copy(CTR);
 sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
 Object.assign(sun.shadow.camera,{left:-13,right:13,top:13,bottom:-13,near:1,far:130});
@@ -532,17 +532,17 @@ function spotsGrid(room,nx,nz,inset=.55){
   const[x0,y0,x1,y1]=room.r,a=wx(x0)+inset,b=wx(x1)-inset,c=wz(y0)+inset,d=wz(y1)-inset;
   for(let i=0;i<nx;i++)for(let j=0;j<nz;j++)addSpot(nx>1?a+(b-a)*i/(nx-1):(a+b)/2,nz>1?c+(d-c)*j/(nz-1):(c+d)/2);
 }
-spotsGrid(ROOM.living,4,4,.6);spotsGrid(ROOM.hall,1,2);spotsGrid(ROOM.corridor,1,4,.45);
+spotsGrid(ROOM.living,5,4,.6);spotsGrid(ROOM.hall,1,2);spotsGrid(ROOM.corridor,1,4,.45);
 spotsGrid(ROOM.baby,2,3);spotsGrid(ROOM.nail,2,2);spotsGrid(ROOM.bath,2,1,.7);spotsGrid(ROOM.flex,3,2);
 spotsGrid(ROOM.master,3,2,.8);spotsGrid(ROOM.ensuite,1,1,.6);
-[[2.5,.9,12],[3.6,3.4,12],[.4,2.5,13],[.1,-1.2,5],[-1.2,1.0,4.5],[-.4,-4,7],[-3,-2.8,7.5],[-3,-.4,5],[-3.3,1.6,8],[-3.3,4.2,9],[-1.6,5,3]].forEach(([x,z,I])=>addPoint(x,2.25,z,I));
+[[2.5,1.4,9],[.3,1.6,9],[.4,4.5,9],[4.9,3.4,10],[4.2,5.3,8],[.1,-1.2,5],[-1.2,1.0,4.5],[-.4,-4,7],[-3,-2.8,7.5],[-3,-.4,5],[-3.3,1.6,8],[-3.3,4.2,9],[-1.6,5,3]].forEach(([x,z,I])=>addPoint(x,2.25,z,I));
 
 
 /* ===================== CONTROLS ===================== */
 const $=id=>document.getElementById(id);
 const keys={};
 const player={x:wx(745)-.35,z:wz(397)+.9,yaw:2.62,pitch:-.04,vx:0,vz:0,t:0};
-const orbit={az:0,pol:.2,dist:21.5,cx:-.4,cz:1.5};
+const orbit={az:0,pol:.2,dist:26,cx:.2,cz:1.5};
 const fogObj=scene.fog;
 let mode='walk',anim=null,locked=false,drag=false;
 const R=.22;
@@ -630,12 +630,12 @@ canvas.addEventListener('wheel',e=>{if(mode==='doll'){e.preventDefault();orbit.d
 
 /* ===================== LABELS + MINIMAP ===================== */
 const labelEls=ROOMS.map(r=>{
-  const[x0,y0,x1,y1]=r.r,a=(x1-x0-6)*(y1-y0-6)*S*S;
-  const el=document.createElement('div');el.innerHTML=`${r.name}<i>${a.toFixed(1)} m²</i>`;$('labels').appendChild(el);
+  const[x0,y0,x1,y1]=r.r,a=r.dims?r.dims[0]*r.dims[1]:(x1-x0-6)*(y1-y0-6)*S*S;
+  const el=document.createElement('div');el.innerHTML=`${r.name}<i>${r.dims?r.dims[0].toFixed(2)+' × '+r.dims[1].toFixed(2)+' m · ':''}${a.toFixed(1)} m²</i>`;$('labels').appendChild(el);
   const off={svc:[-52,-30],bath:[0,16],nail:[0,-14],corridor:[0,0],hall:[10,0],ensuite:[0,12]}[r.id]||[0,0];
   return{el,off,pos:new THREE.Vector3(wx((x0+x1)/2),.4,wz((y0+y1)/2))};
 });
-const mini=$('mini'),mg=mini.getContext('2d'),MS=.32,MX=-216,MY=-104;
+const mini=$('mini'),mg=mini.getContext('2d'),MS=.29,MX=-212,MY=-100;
 const mpx=x=>(x+MX)*MS+6,mpy=y=>(y+MY)*MS+6;
 function drawMiniBase(){
   const c=document.createElement('canvas');c.width=mini.width;c.height=mini.height;const g=c.getContext('2d');
@@ -886,7 +886,7 @@ function book(par,x,y,z,w,h,d,mat,ry=0){return B(par,w,h,d,x,y,z,mat,ry);}
 
 /* ===================== KITCHEN (matches the reference photo) ===================== */
 function kitchen(){
-  const g=scene,xw=-.71,D=.62,fx=xw+D;
+  let g=G(0,.06);const xw=-.71,D=.62,fx=xw+D;
   const gz=(x,y,z,len)=>B(g,.005,.008,len,x,y,z,MAT.seamK,0,false);           // groove running along z
   const gy=(x,y,z,h)=>B(g,.005,h,.008,x,y,z,MAT.seamK,0,false);                // groove running up
   const led=(x,y,z,len)=>B(g,.012,.012,len,x,y,z,MAT.ledK,0,false);
@@ -908,28 +908,32 @@ function kitchen(){
     if(i===1)CYL(g,.05,.04,.16,xw+.2,y,2.76,MAT.potB,16);if(i===2){SPH(g,.06,xw+.18,y+.07,2.72,MAT.ceramic,1,1.2,1);CYL(g,.07,.05,.07,xw+.1,y,2.58,MAT.black,18);}
   }
   CYL(g,.05,.04,.1,xw+.2,.13+3*.46,2.77,MAT.potA,14);SPH(g,.07,xw+.2,.13+3*.46+.2,2.77,MAT.plantA,1,.7,1,8);
-  solid(xw+D/2,1.43,D,2.86);
-  /* west base run: hob, stone top, marble splash, LED under oak band, full-height uppers */
-  const z0=2.9,z1=4.44,zc=(z0+z1)/2,L=z1-z0;
+  solid(xw+D/2,1.43+.06,D,2.86);
+  g=scene;
+  /* west base run: hob, stone top, marble splash, LED under the oak band, full-height uppers */
+  const z0=2.94,z1=5.48,zc=(z0+z1)/2,L=z1-z0;
   B(g,.6,.86,L,xw+.3,0,zc,MAT.cabK);gz(xw+.603,.3,zc,L-.04);gz(xw+.603,.58,zc,L-.04);gy(xw+.603,.02,zc,.26);
   B(g,.64,.04,L+.02,xw+.32,.86,zc,MAT.quartzK);B(g,.02,.6,L,xw+.01,.9,zc,MAT.marbleK,0,false);
-  B(g,.5,.008,.56,xw+.32,.9,3.68,MAT.blackK,0,false);
-  [[-.1,-.14],[.1,-.14],[-.1,.14],[.1,.14]].forEach(([a,b])=>CYL(g,.07,.07,.002,xw+.32+a,.908,3.68+b,MAT.steelK,20));
+  B(g,.5,.008,.56,xw+.32,.9,zc,MAT.blackK,0,false);
+  [[-.1,-.14],[.1,-.14],[-.1,.14],[.1,.14]].forEach(([a,b])=>CYL(g,.07,.07,.002,xw+.32+a,.908,zc+b,MAT.steelK,20));
   B(g,.36,.18,L,xw+.18,1.5,zc,MAT.oakK);led(xw+.37,1.488,zc,L-.04);
-  B(g,.35,.95,L,xw+.175,1.68,zc,MAT.cabK);[3.4,3.92].forEach(zz=>gy(xw+.353,1.7,zz,.9));gz(xw+.353,2.1,zc,L-.04);
+  B(g,.35,.95,L,xw+.175,1.68,zc,MAT.cabK);[-.95,-.32,.32,.95].forEach(d=>gy(xw+.353,1.7,zc+d,.9));gz(xw+.353,2.1,zc,L-.04);
   solid(xw+.3,zc,.6,L);
+  B(g,.3,.13,.2,xw+.3,.9,z0+.25,MAT.blackK);CYL(g,.05,.05,.12,xw+.28,.9,z1-.3,MAT.potB,16);CYL(g,.035,.035,.2,xw+.3,.9,z1-.55,MAT.potA,12);
   /* south run: stone top, sink with black tap, splash under the window */
-  const sx0=xw,sx1=.92,sz1=5.04,sz0=4.43,sxc=(sx0+sx1)/2;
-  B(g,sx1-sx0,.86,sz1-sz0,sxc,0,(sz0+sz1)/2,MAT.cabK);gx2(g);
+  const sx0=xw,sx1=1.78,sz1=6.10,sz0=5.48,sxc=(sx0+sx1)/2;
+  B(g,sx1-sx0,.86,sz1-sz0,sxc,0,(sz0+sz1)/2,MAT.cabK);
+  [.3,.58].forEach(y=>B(g,sx1-sx0-.1,.008,.005,sxc,y,sz0+.003,MAT.seamK,0,false));
   B(g,sx1-sx0,.04,.65,sxc,.86,sz1-.325,MAT.quartzK);
   B(g,.77,.6,.02,xw+.385,.9,sz1-.01,MAT.marbleK,0,false);B(g,1.1,.25,.02,.56,.9,sz1-.01,MAT.marbleK,0,false);
-  B(g,.5,.012,.38,.55,.9,4.78,MAT.steelK,0,false);B(g,.46,.012,.34,.55,.903,4.78,MAT.dark,0,false);
-  CYL(g,.02,.022,.04,.55,.9,4.96,MAT.blackK,12);CYL(g,.011,.011,.3,.55,.94,4.96,MAT.blackK,8);
-  const sp=new THREE.Mesh(new THREE.TorusGeometry(.1,.011,8,20,Math.PI*.85),MAT.blackK);sp.position.set(.55,1.24,4.86);sp.rotation.set(0,Math.PI/2,-.2);g.add(sp);
-  CYL(g,.011,.011,.1,.55,1.14,4.76,MAT.blackK,8);
+  B(g,.5,.012,.38,.55,.9,sz1-.26,MAT.steelK,0,false);B(g,.46,.012,.34,.55,.903,sz1-.26,MAT.dark,0,false);
+  CYL(g,.02,.022,.04,.55,.9,sz1-.08,MAT.blackK,12);CYL(g,.011,.011,.3,.55,.94,sz1-.08,MAT.blackK,8);
+  const sp=new THREE.Mesh(new THREE.TorusGeometry(.1,.011,8,20,Math.PI*.85),MAT.blackK);sp.position.set(.55,1.24,sz1-.18);sp.rotation.set(0,Math.PI/2,-.2);g.add(sp);
+  CYL(g,.011,.011,.1,.55,1.14,sz1-.28,MAT.blackK,8);
   B(g,.75,.18,.36,xw+.375,1.5,sz1-.18,MAT.oakK);B(g,.7,.012,.012,xw+.38,1.488,sz1-.34,MAT.ledK,0,false);
   B(g,.75,.95,.35,xw+.375,1.68,sz1-.175,MAT.cabK);gy(xw+.375,1.7,sz1-.353,.9);
   solid(sxc,(sz0+sz1)/2,sx1-sx0,sz1-sz0);
+  plant(-.4,sz1-.2,.4,.05,201,MAT.potB,1,.9);CYL(g,.07,.06,.12,1.35,.9,sz1-.2,MAT.vase,18);plant(1.35,sz1-.2,.5,.01,202,MAT.vase,1,1.0);
 }
 function gx2(g){/* drawer grooves on the south run */
   [.3,.58].forEach(y=>B(g,1.58,.008,.005,.1,y,4.43+.003,MAT.seamK,0,false));
@@ -940,35 +944,37 @@ function pendant(par,x,z,y,r=.16){
   const c=new THREE.Mesh(new THREE.CylinderGeometry(.004,.004,H-y,4),MAT.black);c.position.set(x,(H+y)/2,z);ceilG.add(c);
   const cap=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,.04,12),MAT.mt);cap.position.set(x,y+r*.95,z);ceilG.add(cap);
 }
+const stoolGroups=[];
 function barStool(x,z){
-  const g=G(x,z,-Math.PI/2);
+  const g=G(x,z,-Math.PI/2);stoolGroups.push(g);
   RB(g,.4,.07,.4,0,.62,0,MAT.stoolK,.03);RB(g,.38,.27,.07,0,.74,-.2,MAT.stoolK,.03,0,0,-.18);
   [[-.15,-.15],[.15,-.15],[-.15,.15],[.15,.15]].forEach(p=>CYL(g,.011,.011,.62,p[0],0,p[1],MAT.blackK,8));
   [[0,-.15,.3,.012],[0,.15,.3,.012]].forEach(p=>B(g,.3,.012,.012,p[0],.27,p[1],MAT.blackK,0,false));
   [[-.15,0],[.15,0]].forEach(p=>B(g,.012,.012,.3,p[0],.27,p[1],MAT.blackK,0,false));
 }
 function island(){
-  const g=scene;
-  B(g,.72,.9,2.1,1.28,0,3.6,MAT.cabK);
-  B(g,.03,.88,2.1,1.655,0,3.6,MAT.oakK);B(g,.72,.88,.03,1.28,0,2.565,MAT.oakK);B(g,.72,.88,.03,1.28,0,4.635,MAT.oakK);
-  [.3,.58].forEach(y=>B(g,.005,.008,2.0,.918,y,3.6,MAT.seamK,0,false));
-  B(g,.84,.04,2.16,1.3,.9,3.6,MAT.quartzK);B(g,.008,.044,2.16,1.723,.9,3.6,MAT.steelK,0,false);
-  [2.8,3.25,3.7,4.15,4.6].forEach(z=>barStool(2.02,z));
-  [3.0,3.6,4.2].forEach(z=>pendant(g,1.3,z,1.72,.15));
-  solid(1.3,3.6,.84,2.16);
+  const g=scene,z0=3.0,z1=5.48,zc=(z0+z1)/2,L=z1-z0;
+  B(g,.72,.9,L,1.28,0,zc,MAT.cabK);
+  B(g,.03,.88,L,1.655,0,zc,MAT.oakK);B(g,.72,.88,.03,1.28,0,z0+.015,MAT.oakK);
+  [.3,.58].forEach(y=>B(g,.005,.008,L-.1,.918,y,zc,MAT.seamK,0,false));
+  B(g,.84,.04,L+.06,1.3,.9,zc,MAT.quartzK);B(g,.008,.044,L+.06,1.723,.9,zc,MAT.steelK,0,false);
+  [0,1,2,3,4].forEach(i=>barStool(2.02,z0+.35+i*.5));
+  [-.8,0,.8].forEach(d=>pendant(g,1.3,zc+d,1.72,.15));
+  solid(1.3,zc,.84,L+.06);
   /* styling on the stone: fruit bowl, cups on a tray, branches, cookbook */
-  const bw=G(1.25,3.05,0,.94,g);CYL(bw,.15,.1,.07,0,0,0,MAT.potB,28);
+  const bw=G(1.25,zc-.55,0,.94,g);CYL(bw,.15,.1,.07,0,0,0,MAT.potB,28);
   [[0,.1,0,'#e48a2d'],[.07,.1,.05,'#e8b53a'],[-.06,.1,.04,'#d5d94a'],[0,.14,-.05,'#e48a2d'],[-.05,.1,-.06,'#c8352d']].forEach(([x,y,z,c])=>SPH(bw,.045,x,y,z,cm(c,.5),1,1,1,10));
-  const tr=G(1.35,4.1,0,.94,g);B(tr,.4,.02,.26,0,0,0,MAT.wd);CYL(tr,.04,.032,.08,-.08,.02,0,MAT.potB,16);CYL(tr,.04,.032,.08,.08,.02,.03,MAT.potB,16);
-  B(g,.3,.03,.22,1.2,.94,4.5,MAT.paperW,.3);B(g,.28,.03,.2,1.2,.97,4.5,MAT.dark,.3);
-  plant(1.2,3.55,.7,.1,5,MAT.vase,1,.94);
+  const tr=G(1.35,zc+.55,0,.94,g);B(tr,.4,.02,.26,0,0,0,MAT.wd);CYL(tr,.04,.032,.08,-.08,.02,0,MAT.potB,16);CYL(tr,.04,.032,.08,.08,.02,.03,MAT.potB,16);
+  B(g,.3,.03,.22,1.2,.94,zc+1.0,MAT.paperW,.3);B(g,.28,.03,.2,1.2,.97,zc+1.0,MAT.dark,.3);
+  plant(1.2,zc,.7,.1,5,MAT.vase,1,.94);
 }
 
 /* ===================== SOFA (3.0 m, as in the reference photo) ===================== */
+let SOFA_MINX=0,SOFA_MAXX=0,STOOL_BACK=0;const SOFA_Z=3.35,TV_Z=3.35,EAST_IN=wx(837)-.12;
 function sofa(){
-  const root=G(3.0,3.55,Math.PI/2);
+  const root=G(0,SOFA_Z,Math.PI/2);
   const mod=(sx,outer,ry)=>{
-    const m=G(sx*.75,.03,ry,0,root);
+    const m=G(sx*.73,.03,ry,0,root);
     B(m,1.34,.06,.8,0,.05,0,MAT.sofaBase);
     [[-.6,-.33],[.6,-.33],[-.6,.33],[.6,.33]].forEach(p=>CYL(m,.02,.02,.05,p[0],0,p[1],MAT.black,8));
     RB(m,1.48,.2,.98,0,.11,0,MAT.sofaK,.09);RB(m,1.40,.16,.76,0,.28,.08,MAT.sofaK,.075);
@@ -980,7 +986,12 @@ function sofa(){
   RB(root,.52,.5,.15,-.98,.44,-.1,MAT.knitK,.07,0,.1,-.3);RB(root,.5,.3,.13,-.5,.44,.08,MAT.sofaK,.06,0,0,-.12);
   SPH(root,.19,.28,.63,.03,MAT.sofaK,1,1,1,24);RB(root,.5,.3,.13,.74,.44,.06,MAT.sofaK,.06,0,0,-.12);
   RB(root,.52,.5,.15,1.12,.44,-.12,MAT.knitK,.07,0,-.12,-.3);
-  solid(3.0,3.55,1.06,3.0);
+  scene.updateMatrixWorld(true);
+  STOOL_BACK=Math.max(...stoolGroups.map(q=>new THREE.Box3().setFromObject(q,true).max.x));
+  root.position.x=STOOL_BACK+1.2-new THREE.Box3().setFromObject(root,true).min.x;root.updateMatrixWorld(true);
+  const b=new THREE.Box3().setFromObject(root,true);SOFA_MINX=b.min.x;SOFA_MAXX=b.max.x;
+  solid((b.min.x+b.max.x)/2,SOFA_Z,b.max.x-b.min.x,b.max.z-b.min.z);
+  window.__measure={stoolBackX:+STOOL_BACK.toFixed(3),sofaBackX:+SOFA_MINX.toFixed(3),gapStoolBackToSofaBack:+(SOFA_MINX-STOOL_BACK).toFixed(3),sofaLength:+(b.max.z-b.min.z).toFixed(3),sofaDepth:+(SOFA_MAXX-SOFA_MINX).toFixed(3)};
 }
 /* ===================== TV WALL: 85" LG on a fluted feature panel ===================== */
 let tvScreen=null,tvOn=true;
@@ -994,7 +1005,7 @@ function setTV(on){tvOn=on;if(!tvScreen)return;
   tvScreen.map=on?tvOnTex:tvOffTex;tvScreen.emissiveMap=on?tvOnTex:null;tvScreen.emissive.set(on?'#ffffff':'#000000');tvScreen.emissiveIntensity=on?.9:0;tvScreen.needsUpdate=true;
   const b=document.getElementById('tvBtn');if(b)b.textContent='TV: '+(on?'on':'off')+' (T)';}
 function tvWall(){
-  const g=scene,zc=3.55,ze=5.04;
+  const g=scene,zc=TV_Z,ze=EAST_IN;
   B(g,.03,H,3.2,ze-.015,0,zc,MAT.dark);
   for(let i=0;i<41;i++){B(g,.04,H-.02,.05,ze-.045,0,zc-1.5+i*.075,MAT.panel,0,false);}
   [zc-1.6,zc+1.6].forEach(z=>B(g,.012,H,.012,ze-.07,0,z,MAT.ledK,0,false));
@@ -1011,6 +1022,7 @@ function tvWall(){
   CYL(g,.07,.1,.26,ze-.3,.6,zc-1.0,MAT.vase,20);plant(ze-.3,zc-1.0,.55,.04,71,MAT.vase,1,.86);
   B(g,.28,.04,.2,ze-.25,.6,zc+.7,MAT.paperW,.2);B(g,.24,.04,.18,ze-.25,.64,zc+.7,MAT.mt,.2);SPH(g,.07,ze-.25,.76,zc+.7,MAT.ceramic);
   lamp(g,ze-.3,.6,zc+1.0,.34,.1);
+  plant(ze-.32,zc-2.15,1.5,.17,72,MAT.potA);plant(ze-.32,zc+2.15,1.2,.15,73,MAT.potB,0);
 }
 
 /* ===================== DINING (fully set), LOUNGE STYLING, ENTRY ===================== */
@@ -1027,7 +1039,7 @@ function placeSetting(par,x,z,ry){
   B(g,.1,.01,.045,0,.02,.205,MAT.paperW,0,false);
 }
 function dining(){
-  const g=scene,cx=2.5,cz=.98;
+  const g=scene,cx=2.5,cz=1.3;
   const t=CYL(g,.5,.5,.05,cx,.72,cz,MAT.wd,48);t.scale.set(2.2,1,1.0);
   CYL(g,.1,.32,.72,cx-.5,0,cz,MAT.wd,24);CYL(g,.1,.32,.72,cx+.5,0,cz,MAT.wd,24);
   solid(cx,cz,2.2,1.0);
@@ -1044,38 +1056,39 @@ function dining(){
   for(let i=0;i<8;i++){const a=i/8*6.283,s=new THREE.Mesh(new THREE.SphereGeometry(.04,12,8),MAT.glow);s.position.set(cx+Math.cos(a)*.55*1.4,1.72,cz+Math.sin(a)*.55*.9);ceilG.add(s);}
   [-.5,.5].forEach(dx=>{const c=new THREE.Mesh(new THREE.CylinderGeometry(.003,.003,H-1.72,4),MAT.black);c.position.set(cx+dx,(H+1.72)/2,cz);ceilG.add(c);});
   /* triptych on the north wall */
-  [1.55,2.5,3.45].forEach((x,i)=>artwork(g,.62,.95,x,1.1,.02,0,i+1,i%3));
+  [1.55,2.5,3.45].forEach((x,i)=>artwork(g,.62,.95,x,1.1,.085,0,i+1,i%3));
 }
 function lounge(){
-  const g=scene;
-  rug(3.8,3.55,2.3,3.4,0);
-  /* nesting coffee tables: travertine/stone drum + wood */
-  CYL(g,.28,.28,.4,3.9,0,3.1,MAT.quartzK,36);CYL(g,.2,.2,.3,3.85,0,3.8,MAT.wd,32);
-  book(g,3.9,.4,3.1,.26,.04,.2,MAT.paperW,.2);book(g,3.9,.44,3.1,.22,.035,.17,MAT.mt,.1);
-  CYL(g,.04,.035,.12,3.85,.3,3.8,MAT.vase,16);plant(3.85,3.8,.35,.01,95,MAT.vase,1,.42);
-  /* entry console + round mirror by the front door */
-  B(g,.34,.8,.96,4.86,0,1.44,MAT.wd);B(g,.005,.7,.9,4.69,.05,1.44,MAT.seamK,0,false);solid(4.86,1.44,.34,.96);
-  const mr=new THREE.Mesh(new THREE.CircleGeometry(.4,40),MAT.mirror);mr.rotation.y=-Math.PI/2;mr.position.set(5.025,1.5,1.44);g.add(mr);
-  const fr=new THREE.Mesh(new THREE.TorusGeometry(.4,.014,8,48),MAT.mt);fr.rotation.y=Math.PI/2;fr.position.set(5.02,1.5,1.44);g.add(fr);
-  lamp(g,4.9,.8,1.15,.4,.12);CYL(g,.09,.07,.05,4.86,.8,1.75,MAT.mt,18);CYL(g,.05,.04,.18,4.86,.85,1.45,MAT.vase,14);
-  /* sheer curtains at the balcony door, floor lamp, big plants */
-  sheerAt(1.3,5.0,4.84,5.0,0,2.5,16);
-  const fl=G(3.85,4.97);CYL(fl,.14,.14,.02,0,0,0,MAT.black,20);CYL(fl,.012,.012,1.6,0,0,0,MAT.mt,8);
+  const g=scene,ze=EAST_IN,cz=TV_Z,tx=SOFA_MAXX+.62,rx0=SOFA_MAXX-.6,rx1=ze-.1;
+  rug((rx0+rx1)/2,cz,rx1-rx0,3.4,0);
+  /* nesting coffee tables: stone drum + wood */
+  CYL(g,.28,.28,.4,tx,0,cz-.35,MAT.quartzK,36);CYL(g,.2,.2,.3,tx-.1,0,cz+.35,MAT.wd,32);
+  book(g,tx,.4,cz-.35,.26,.04,.2,MAT.paperW,.2);book(g,tx,.44,cz-.35,.22,.035,.17,MAT.mt,.1);
+  CYL(g,.04,.035,.12,tx-.1,.3,cz+.35,MAT.vase,16);plant(tx-.1,cz+.35,.35,.01,95,MAT.vase,1,.42);
+  solid(tx,cz-.35,.56,.56);solid(tx-.1,cz+.35,.4,.4);
+  /* entry console + round mirror on the north wall, east of the front door */
+  B(g,.96,.8,.34,5.6,0,.23,MAT.wd);B(g,.9,.7,.005,5.6,.05,.405,MAT.seamK,0,false);solid(5.6,.23,.96,.34);
+  const mr=new THREE.Mesh(new THREE.CircleGeometry(.4,40),MAT.mirror);mr.position.set(5.6,1.5,.075);g.add(mr);
+  const fr=new THREE.Mesh(new THREE.TorusGeometry(.4,.014,8,48),MAT.mt);fr.position.set(5.6,1.5,.082);g.add(fr);
+  lamp(g,5.3,.8,.2,.4,.12);CYL(g,.09,.07,.05,5.75,.8,.2,MAT.mt,18);CYL(g,.05,.04,.18,5.9,.8,.2,MAT.vase,14);
+  /* sheer curtains along the balcony door, floor lamp, big plants */
+  sheerAt(wx(644),5.95,wx(821),5.95,0,2.5,16);
+  const fl=G(4.3,5.4);CYL(fl,.14,.14,.02,0,0,0,MAT.black,20);CYL(fl,.012,.012,1.6,0,0,0,MAT.mt,8);
   const sh=new THREE.Mesh(new THREE.SphereGeometry(.17,20,14),MAT.shade);sh.position.y=1.65;fl.add(sh);
-  plant(1.5,4.98,1.7,.22,102,MAT.potA);
+  plant(2.2,5.85,1.7,.22,102,MAT.potA);
 }
 
 /* ===================== MASTER BEDROOM ===================== */
 function masterBedroom(){
   const g=scene,wzs=2.87,xs=-4.88,xe=-1.75,n=6,cw=(xe-xs)/n;
-  B(g,xe-xs,2.5,.62,(xs+xe)/2,0,wzs+.31,MAT.wl);
+  B(g,xe-xs,2.5,.55,(xs+xe)/2,0,wzs+.275,MAT.wl);
   for(let i=0;i<n;i++){
-    const x=xs+cw*(i+.5);B(g,cw-.015,2.46,.02,x,.03,wzs+.63,MAT.wl);
-    if(i===1||i===4)for(let k=0;k<9;k++)B(g,.025,2.4,.026,x-cw/2+.07+k*.05,.05,wzs+.645,MAT.wd,0,false);
+    const x=xs+cw*(i+.5);B(g,cw-.015,2.46,.02,x,.03,wzs+.56,MAT.wl);
+    if(i===1||i===4)for(let k=0;k<9;k++)B(g,.025,2.4,.026,x-cw/2+.07+k*.05,.05,wzs+.575,MAT.wd,0,false);
   }
-  B(g,xe-xs,.012,.012,(xs+xe)/2,.08,wzs+.64,MAT.ledK,0,false);solid((xs+xe)/2,wzs+.31,xe-xs,.62);
+  B(g,xe-xs,.012,.012,(xs+xe)/2,.08,wzs+.57,MAT.ledK,0,false);solid((xs+xe)/2,wzs+.275,xe-xs,.55);
   /* made bed: headboard on the west wall */
-  const bz=4.87,bed=G(-3.83,bz);
+  const bz=4.92,bed=G(-3.83,bz);
   RB(bed,.13,1.28,1.7,-.92,.12,0,MAT.fAcc,.05);for(let k=0;k<7;k++)B(bed,.012,1.1,.012,-.855,.2,-.72+k*.24,MAT.seamK,0,false);
   RB(bed,2.0,.3,1.66,0,.0,0,MAT.fAcc,.04);RB(bed,1.95,.24,1.6,.02,.3,0,MAT.linen,.07);
   RB(bed,1.48,.13,1.66,.28,.52,0,MAT.linen,.06);                    // duvet
@@ -1086,8 +1099,7 @@ function masterBedroom(){
   solid(-3.83,bz,2.1,1.72);
   /* floating nightstands, lamps, tray and books */
   B(g,.32,.14,.34,-4.72,.5,3.9,MAT.wd);lamp(g,-4.72,.64,3.9,.34,.11);B(g,.16,.03,.2,-4.65,.64,3.92,MAT.paperW);
-  B(g,.05,.36,.1,-4.84,1.15,5.78,MAT.mt);B(g,.04,.3,.08,-4.82,1.18,5.78,MAT.ledK,0,false);
-  rug(-3.55,4.87,2.3,2.25,0);
+  rug(-3.55,4.92,2.3,2.25,0);
   artwork(g,1.3,.9,-4.86,1.55,bz,Math.PI/2,41,0);
   sheerAt(-4.5,5.78,-2.5,5.78,0,2.5,14);pendant(g,-3.5,bz,1.95,.2);
 }
@@ -1146,7 +1158,7 @@ function babyRoom(){
   B(g,1.2,.9,.5,-.3,0,-5.46,MAT.wl);B(g,1.22,.04,.52,-.3,.9,-5.46,MAT.wd);[.3,.6].forEach(y=>B(g,1.1,.006,.01,-.3,y,-5.2,MAT.seamK,0,false));
   RB(g,.7,.06,.45,-.45,.94,-5.46,MAT.throwC,.02);B(g,.26,.2,.1,.1,.94,-5.5,MAT.fAcc);solid(-.3,-5.46,1.2,.5);
   [.0,.3].forEach(dx=>CYL(g,.06,.05,.1,-.1+dx*.5,.94,-5.6,MAT.potB,14));
-  B(g,1.45,2.2,.55,.07,0,-2.69,MAT.wl);for(let i=0;i<3;i++)B(g,.47,2.1,.02,-.4+i*.48,.05,-2.405,i===1?MAT.fAcc:MAT.wl);solid(.07,-2.69,1.45,.55);
+  B(g,1.3,2.2,.55,.15,0,-2.69,MAT.wl);for(let i=0;i<3;i++)B(g,.42,2.1,.02,-.28+i*.43,.05,-2.405,i===1?MAT.fAcc:MAT.wl);solid(.15,-2.69,1.3,.55);
   const rc=G(-1.1,-4.1,Math.PI/2);                                                          // rocking chair
   RB(rc,.62,.1,.58,0,.4,0,MAT.fChair,.05);RB(rc,.62,.55,.12,0,.48,-.26,MAT.fChair,.06,0,0,-.18);
   [-.3,.3].forEach(x=>{RB(rc,.06,.28,.55,x,.46,0,MAT.wl,.02);const t=new THREE.Mesh(new THREE.TorusGeometry(.45,.015,6,24,Math.PI*.6),MAT.wl);t.rotation.set(0,Math.PI/2,Math.PI*1.2);t.position.set(x,.46,0);rc.add(t);});
@@ -1157,7 +1169,7 @@ function babyRoom(){
   const moon=new THREE.Mesh(new THREE.CircleGeometry(.28,32),new THREE.MeshStandardMaterial({color:'#f4ead2',emissive:'#f4ead2',emissiveIntensity:.18}));
   moon.position.set(.79,1.6,-4.7);moon.rotation.y=-Math.PI/2;g.add(moon);
   [-5.5,-5.1,-4.7].forEach((z,i)=>artwork(g,.28,.38,-1.62,1.3,z,Math.PI/2,51+i,i%3));
-  sheerAt(-1.1,-5.7,.5,-5.7,0,2.45,12);plant(-1.35,-2.75,.9,.14,141,MAT.potB);
+  sheerAt(-1.1,-5.7,.5,-5.7,0,2.45,12);plant(.3,-5.46,.4,.05,141,MAT.potB,1,.94);
 }
 
 /* ===================== NAIL STUDIO ===================== */
@@ -1225,16 +1237,17 @@ function balconies(){
   B(g,.6,.05,.5,-5.2,0,-.2,MAT.steelK,0,false);[-.2,0,.2].forEach(x=>B(g,.012,1.1,.012,-5.2+x,0,-.2,MAT.steelK,0,false));
   CYL(g,.15,.12,.28,-5.6,0,-.1,MAT.rattan,18);plant(-4.8,.15,.7,.1,181,MAT.potA);
   /* large balcony: dining pair, lounge, rug, planters, lanterns */
-  rug(3.1,6.5,3.3,2.2,0);
-  const t=G(2.6,7.0);CYL(t,.4,.4,.04,0,.7,0,MAT.paperW,32);CYL(t,.03,.04,.7,0,0,0,MAT.black,10);CYL(t,.2,.2,.02,0,0,0,MAT.black,16);solid(2.6,7.0,.8,.8);
+  const bx=1.18,bz=1.06;
+  rug(3.1+bx,6.5+bz,3.3,2.2,0);
+  const t=G(2.6+bx,7.0+bz);CYL(t,.4,.4,.04,0,.7,0,MAT.paperW,32);CYL(t,.03,.04,.7,0,0,0,MAT.black,10);CYL(t,.2,.2,.02,0,0,0,MAT.black,16);solid(2.6+bx,7.0+bz,.8,.8);
   CYL(t,.05,.04,.16,0,.74,0,MAT.vase,14);
-  [[-.65,0,Math.PI/2],[.65,0,-Math.PI/2]].forEach(([dx,dz,ry])=>{const c=G(2.6+dx,7.0+dz,ry);RB(c,.5,.06,.5,0,.42,0,MAT.rattan,.03);RB(c,.5,.45,.06,0,.45,-.23,MAT.rattan,.03);RB(c,.4,.05,.4,0,.48,0,MAT.fChair,.02);
+  [[-.65,0,Math.PI/2],[.65,0,-Math.PI/2]].forEach(([dx,dz,ry])=>{const c=G(2.6+bx+dx,7.0+bz+dz,ry);RB(c,.5,.06,.5,0,.42,0,MAT.rattan,.03);RB(c,.5,.45,.06,0,.45,-.23,MAT.rattan,.03);RB(c,.4,.05,.4,0,.48,0,MAT.fChair,.02);
     [[-.2,-.2],[.2,-.2],[-.2,.2],[.2,.2]].forEach(p=>CYL(c,.015,.015,.42,p[0],0,p[1],MAT.black,6));});
-  const s=G(4.3,6.75,-Math.PI/2);RB(s,1.9,.4,.8,0,0,0,MAT.rattan,.05);RB(s,1.8,.16,.62,0,.4,.05,MAT.fChair,.05);RB(s,1.9,.45,.18,0,.4,-.32,MAT.fChair,.06);
-  RB(s,.4,.35,.12,-.6,.52,-.18,MAT.fAcc,.05,0,0,-.2);RB(s,.4,.35,.12,.5,.52,-.18,MAT.fAcc2,.05,0,0,-.2);solid(4.3,6.75,.8,1.9);
-  CYL(g,.24,.24,.35,3.5,0,6.0,MAT.potB,24);
-  [[1.5,5.5],[4.9,7.55],[1.45,7.55],[4.9,5.45]].forEach(([x,z],i)=>plant(x,z,1.1+(i%2)*.4,.2,191+i,i%2?MAT.potA:MAT.potB,i%2));
-  [[1.6,6.6],[4.7,6.2]].forEach(([x,z])=>{CYL(g,.12,.12,.4,x,0,z,MAT.black,12);CYL(g,.1,.1,.2,x,.4,z,MAT.glassC,12);SPH(g,.04,x,.5,z,MAT.glow);});
+  const s=G(4.3+bx,6.75+bz,-Math.PI/2);RB(s,1.9,.4,.8,0,0,0,MAT.rattan,.05);RB(s,1.8,.16,.62,0,.4,.05,MAT.fChair,.05);RB(s,1.9,.45,.18,0,.4,-.32,MAT.fChair,.06);
+  RB(s,.4,.35,.12,-.6,.52,-.18,MAT.fAcc,.05,0,0,-.2);RB(s,.4,.35,.12,.5,.52,-.18,MAT.fAcc2,.05,0,0,-.2);solid(4.3+bx,6.75+bz,.8,1.9);
+  CYL(g,.24,.24,.35,3.5+bx,0,6.0+bz,MAT.potB,24);
+  [[1.5,5.5],[4.9,7.55],[1.45,7.55],[4.9,5.45]].forEach(([x,z],i)=>plant(x+bx,z+bz,1.1+(i%2)*.4,.2,191+i,i%2?MAT.potA:MAT.potB,i%2));
+  [[1.6,6.6],[4.7,6.2]].forEach(([x,z])=>{CYL(g,.12,.12,.4,x+bx,0,z+bz,MAT.black,12);CYL(g,.1,.1,.2,x+bx,.4,z+bz,MAT.glassC,12);SPH(g,.04,x+bx,.5,z+bz,MAT.glow);});
 }
 function extraLights(){}
 function buildFurniture(){
