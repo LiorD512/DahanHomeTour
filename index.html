@@ -207,7 +207,8 @@ Vw(233.5,569,725,EXT);
 Vw(387,618,725,INT);
 Hw(618,387,482,INT,[door(394,434,'a',1)]);
 /* hall / living */
-Hw(397,478,585,INT,[door(514,554,'b',-1)]);
+/* the old living-to-hall opening (x -0.12..0.68) is closed: the vitrine stands there; the hall is reached through the hidden kitchen door */
+Hw(397,478,585,INT);
 Hw(397,585,837,EXT,[door(722,768,'b',1)]);
 Vw(837,397,711,EXT,[]);
 Hw(711,478,837,EXT,[win(522.5,587.5,1.10,2.20),slider(644,821)]);
@@ -1101,10 +1102,10 @@ function kitchen(){
    CYL(scene,.04,.035,.07,kxm(33),.9,kzm(232),MAT.potB,14);}
   solid(kxm(D/2),kzm(264.4/2),.62,2.64);solid(kxm(D/2),kzm(346.4),.62,1.64);solid(kxm(D/2),kzm(554.2),.64,.996);
 }
-/* vitrine (position A): black-framed glass display cabinet on the north wall, east of the hall opening.
+/* vitrine (position A): black-framed glass display cabinet on the north wall, where the hall opening was (next to the tall kitchen unit).
    Floor to ceiling, 90 cm wide, 45 cm deep, oak back, 7 glass shelves, LED on both sides. u = cm from the west edge, v = cm out from the wall. */
 function vitrine(){
-  const X0=0.75,ZW=0.06,WD=90,DP=45,fr=MAT.frame,T=263,Y0=10,Y1=257,FR=3;
+  const X0=-0.10,ZW=0.06,WD=90,DP=45,fr=MAT.frame,T=263,Y0=10,Y1=257,FR=3;
   const vb=(u0,u1,v0,v1,y0,y1,mat,cast=true)=>B(scene,(u1-u0)/100,(y1-y0)/100,(v1-v0)/100,X0+(u0+u1)/200,y0/100,ZW+(v0+v1)/200,mat,0,cast);
   const X=u=>X0+u/100,Z=v=>ZW+v/100;
   vb(0,WD,0,DP+1,0,Y0,fr);vb(0,WD,0,DP+1,Y1,T,fr);                              // plinth + head
@@ -1187,7 +1188,7 @@ function island(){
 
 
 /* ===================== SOFA (3.0 m, as in the reference photo) ===================== */
-let SOFA_MINX=0,SOFA_MAXX=0,STOOL_BACK=0;const SOFA_Z=3.35,TV_Z=3.35,EAST_IN=wx(837)-.12;
+let SOFA_MINX=0,SOFA_MAXX=0,STOOL_BACK=0;const SOFA_Z=3.75,TV_Z=3.75,EAST_IN=wx(837)-.12;
 function sofa(){
   const root=G(0,SOFA_Z,Math.PI/2);
   const mod=(sx,outer,ry)=>{
@@ -1239,7 +1240,7 @@ function tvWall(){
   CYL(g,.07,.1,.26,ze-.3,.6,zc-1.0,MAT.vase,20);plant(ze-.3,zc-1.0,.55,.04,71,MAT.vase,1,.86);
   B(g,.28,.04,.2,ze-.25,.6,zc+.7,MAT.paperW,.2);B(g,.24,.04,.18,ze-.25,.64,zc+.7,MAT.mt,.2);SPH(g,.07,ze-.25,.76,zc+.7,MAT.ceramic);
   lamp(g,ze-.3,.6,zc+1.0,.34,.1);
-  plant(ze-.32,zc-2.15,1.5,.17,72,MAT.potA);plant(ze-.32,zc+2.15,1.2,.15,73,MAT.potB,0);
+  plant(ze-.32,zc-2.15,1.5,.17,72,MAT.potA);plant(ze-.32,Math.min(zc+2.15,5.75),1.2,.15,73,MAT.potB,0);
 }
 
 /* ===================== DINING (fully set), LOUNGE STYLING, ENTRY ===================== */
@@ -1273,8 +1274,8 @@ function dining(){
   for(let i=0;i<8;i++){const a=i/8*6.283,s=new THREE.Mesh(new THREE.SphereGeometry(.04,12,8),MAT.glow);s.position.set(cx+Math.cos(a)*.55*1.4,1.72,cz+Math.sin(a)*.55*.9);ceilG.add(s);}
   [-.5,.5].forEach(dx=>{const c=new THREE.Mesh(new THREE.CylinderGeometry(.003,.003,H-1.72,4),MAT.black);c.position.set(cx+dx,(H+1.72)/2,cz);ceilG.add(c);});
   /* triptych on the north wall */
-  /* two prints centred on the table (the vitrine now takes the west end of this wall) */
-  [cx-.38,cx+.38].forEach((x,i)=>artwork(g,.62,.95,x,1.1,.085,0,i+1,i%3));
+  /* triptych on the north wall */
+  [1.55,2.5,3.45].forEach((x,i)=>artwork(g,.62,.95,x,1.1,.085,0,i+1,i%3));
 }
 function lounge(){
   const g=scene,ze=EAST_IN,cz=TV_Z,tx=SOFA_MAXX+.62,rx0=SOFA_MAXX-.6,rx1=ze-.1;
@@ -1284,10 +1285,8 @@ function lounge(){
   book(g,tx,.4,cz-.35,.26,.04,.2,MAT.paperW,.2);book(g,tx,.44,cz-.35,.22,.035,.17,MAT.mt,.1);
   CYL(g,.04,.035,.12,tx-.1,.3,cz+.35,MAT.vase,16);plant(tx-.1,cz+.35,.35,.01,95,MAT.vase,1,.42);
   solid(tx,cz-.35,.56,.56);solid(tx-.1,cz+.35,.4,.4);
-  /* sheer curtains along the balcony door, floor lamp, big plants */
+  /* sheer curtains along the balcony door, big plant */
   sheerAt(wx(644),5.95,wx(821),5.95,0,2.5,16);
-  const fl=G(4.3,5.4);CYL(fl,.14,.14,.02,0,0,0,MAT.black,20);CYL(fl,.012,.012,1.6,0,0,0,MAT.mt,8);
-  const sh=new THREE.Mesh(new THREE.SphereGeometry(.17,20,14),MAT.shade);sh.position.y=1.65;fl.add(sh);
   plant(2.2,5.85,1.7,.22,102,MAT.potA);
 }
 
