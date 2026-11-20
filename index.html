@@ -196,7 +196,8 @@ Hw(424,201,233.5,EXT,[],{hgt:1.3});
 Vw(201,305,424,EXT,[],{hgt:1.3});
 Hw(305,201,276,EXT,[],{hgt:1.3});
 /* corridor, unfurnished room 3.88 x 2.80, master, en-suite 1.80 x 1.97 */
-Vw(482,282,569,INT,[gap(300,392),door(407.75,452.75,'b',1,{glass:true,closed:true,head:2.47})]);
+/* kitchen wall: hidden cabinet-front door to the corridor at kitchen a 428.4-504.4 (leaf is built in kitchen()) */
+Vw(482,282,569,INT,[gap(300,392),{k:'open',a:452.8,b:490.8,head:2.58,bare:true}]);
 Vw(482,569,711,INT);
 Vw(482,711,725,EXT);
 Hw(569,233.5,482,INT,[door(440,480,'b',-1)]);
@@ -527,6 +528,7 @@ function openingFurn(w,op,head,sill){
     const c=new THREE.Vector3();g.getWorldPosition(c);
     DOORS.push({pv,g,seg,dir,lw,openAng,ang:pv.rotation.y,target:pv.rotation.y,center:c,name:op.glass?'glass door to the hallway':'door'});
   }else if(op.k==='open'){
+    if(op.bare)return;
     B(g,.05,head,tw+.04,-W/2-.025,0,0,MAT.white);B(g,.05,head,tw+.04,W/2+.025,0,0,MAT.white);
   }else if(op.k==='win'){
     const Hh=head-sill;
@@ -1054,24 +1056,39 @@ function kitchen(){
   /* oak lift-up cabinets 155-190 (two doors) */
   kb(0,264.4,0,35,155,190,MAT.oakK);kGV(124.4,155,190,35);
   /* ---- top row 191-258: 10 doors, depth 60, plus filler to the ceiling ---- */
-  kb(0,504.4,0,D,U1-67,U1,cream);kb(0,504.4,0,D,U1,263,cream,false);
-  [62.2,124.4,164.4,204.4,264.4,324.4,376.4,428.4,466.4].forEach(a=>kGV(a,U1-67,U1,D));
-  /* ---- oven tower 264.4-324.4: two black ovens over two black drawers ---- */
+  /* top row stops at the fridge; the hidden door runs full height (to 258) and the vitrine to the ceiling */
+  kb(0,428.4,0,D,U1-67,U1,cream);kb(0,504.4,0,D,U1,263,cream,false);
+  [62.2,124.4,164.4,204.4,264.4,324.4,376.4].forEach(a=>kGV(a,U1-67,U1,D));
+  /* ---- oven tower 264.4-324.4: cream column, built-in microwave (191-134) over a 60 cm oven (132-76), cream drawers below ---- */
   {const a0=264.4,a1=324.4;
-   kb(a0,a1,2,D-6,0,PL,MAT.dark,false);kb(a0,a1,0,D-2,PL,TALL,MAT.blackK);
-   kb(a0+.3,a1-.3,D-2,D,PL,72,MAT.blackK);kGH(a0,a1,41,D);                       // drawers
-   [[72,131],[131,190.5]].forEach(([y0,y1])=>{
-     kb(a0+.3,a1-.3,D-2,D+.4,y0,y1,MAT.blackK);
-     kb(a0+5,a1-5,D+.4,D+.6,y0+4,y1-9,MAT.ovenGlass,false);
-     kb(a0+6,a1-6,D+1.2,D+2.4,y1-6.6,y1-5.2,MAT.steelK,false);
-     kb(a0+8,a1-8,D+.4,D+.6,y1-3.6,y1-1.6,MAT.dark,false);});}
+   kb(a0,a1,2,D-6,0,PL,MAT.dark,false);kb(a0,a1,0,D,PL,TALL,cream);
+   kGH(a0,a1,43,D);                                                              // two drawers under the oven
+   const appl=(y0,y1,g0,g1,hy,d0,d1)=>{
+     kb(a0+.4,a1-.4,D,D+.8,y0,y1,MAT.blackK);                                   // black glass front, full width
+     kb(a0+4.5,a1-4.5,D+.8,D+1,g0,g1,MAT.ovenGlass,false);                      // viewing window
+     kb(a0+4,a1-4,D+.8,D+.95,d0,d1,MAT.ovenGlass,false);                         // control strip
+     kb(a0+27,a1-27,D+.95,D+1.05,d0+1.2,d1-1.2,MAT.ledK,false);                 // clock display
+     kb(a0+5,a1-5,D+2.6,D+3.8,hy-.6,hy+.6,MAT.steelK,false);                    // bar handle
+     [a0+7,a1-8.5].forEach(a=>kb(a,a+1.5,D+.8,D+2.6,hy-.4,hy+.4,MAT.steelK,false));};
+   appl(134,191,140,171,178,182.5,188.5);                                        // microwave
+   appl(76,132,80,112,119,123.5,129.5);                                          // oven
+   kb(a0+.4,a1-.4,D,D+.3,132,134,MAT.dark,false);}                               // shadow gap between the two
   /* ---- fridge 324.4-428.4: black four-door French-door model ---- */
   {const a0=324.4,a1=428.4,am=(a0+a1)/2;
-   kb(a0,a1,0,D,0,TALL,MAT.blackK);kGV(am,0,TALL,D);kGH(a0,a1,70,D);
-   [-1.6,1.6].forEach(o=>kb(am+o-.5,am+o+.5,D+.2,D+2.8,98,150,MAT.steelK,false));
+   kb(a0,a1,0,D,0,TALL,MAT.blackK);kGV(am,0,TALL,D);kGH(a0,a1,87,D);
+   [-1.6,1.6].forEach(o=>kb(am+o-.5,am+o+.5,D+.2,D+2.8,105,175,MAT.steelK,false));
    kb(a0+1,a1-1,D-.1,D+.15,0,.6,MAT.dark,false);}
-  /* ---- pantry 428.4-504.4 (80 nominal, 76 visible): two tall cream doors ---- */
-  kb(428.4,504.4,2,D-6,0,PL,MAT.dark,false);kb(428.4,504.4,0,D,PL,TALL,cream);kGV(466.4,PL,TALL,D);
+  /* ---- hidden door 428.4-504.4: cream handleless leaf flush with the cabinet fronts, opens into a 60 cm passage to the corridor ---- */
+  {const a0=428.4,a1=504.4,lw=(a1-a0-.6)/100;
+   const g=G(kxm(D-1),kzm(a0+.3),Math.PI/2);                                     // local +x runs toward the vitrine, local +z faces the room
+   const pv=new THREE.Group();pv.userData.dyn=true;g.add(pv);
+   B(pv,lw,2.565,.02,lw/2,.01,0,cream);
+   B(pv,lw-.004,.004,.003,lw/2,1.908,.0115,MAT.seamK,0,false);                   // seam lined up with the top-row cabinets
+   g.updateMatrixWorld(true);
+   const p0=pv.localToWorld(new THREE.Vector3()),p1=pv.localToWorld(new THREE.Vector3(lw,0,0));
+   const seg=[p0.x,p0.z,p1.x,p1.z,.05];SEGS.push(seg);
+   DOORS.push({pv,g,seg,dir:1,lw,openAng:1.5,ang:0,target:0,center:new THREE.Vector3(kxm(30),0,kzm((a0+a1)/2)),name:'door to the hallway'});}
+  vitrine(504.4,594.5,D);kb(594.5,604,0,D,0,263,cream);                          // cream filler to the corner
   /* ---- on the counter: stand mixer by the corner, coffee machine by the ovens ---- */
   {const xm=kxm(22),zm=kzm(30);
    B(scene,.26,.05,.2,xm,.9,zm,MAT.blackK);B(scene,.1,.30,.16,kxm(12),.9,zm,MAT.blackK);B(scene,.20,.07,.10,xm,1.15,zm,MAT.blackK);
@@ -1079,7 +1096,33 @@ function kitchen(){
   {const xc=kxm(24),zc=kzm(232);
    B(scene,.23,.34,.30,xc,.9,zc,MAT.blackK);B(scene,.17,.02,.20,kxm(30),1.0,kzm(232),MAT.steelK,0,false);
    CYL(scene,.04,.035,.07,kxm(33),.9,kzm(232),MAT.potB,14);}
-  solid(kxm(D/2),kzm(264.4/2),.62,2.64);solid(kxm(D/2),kzm(384.4),.62,2.4);
+  solid(kxm(D/2),kzm(264.4/2),.62,2.64);solid(kxm(D/2),kzm(346.4),.62,1.64);solid(kxm(D/2),kzm(554.2),.64,.996);
+}
+/* vitrine: black-framed glass display cabinet, floor to ceiling, oak back, glass shelves, LED on both sides */
+function vitrine(a0,a1,D){
+  const fr=MAT.frame,T=263,Y0=10,Y1=257,FR=3;
+  kb(a0,a1,0,D+1,0,Y0,fr);kb(a0,a1,0,D+1,Y1,T,fr);                              // plinth + head
+  kb(a0,a0+FR,0,D+1,Y0,Y1,fr);kb(a1-FR,a1,0,D+1,Y0,Y1,fr);                      // side posts
+  kb(a0+FR,a1-FR,0,1.5,Y0,Y1,MAT.oakK);                                         // oak back panel
+  kb(a0+FR,a1-FR,D,D+.4,Y0,Y1,MAT.glass,false);                                 // glass front
+  [a0+FR+.1,a1-FR-.7].forEach(a=>kb(a,a+.6,D-3,D-2,Y0+1,Y1-1,MAT.ledK,false));  // vertical LED strips
+  const n=8,step=(Y1-Y0)/n,shelf=[];
+  for(let i=1;i<n;i++){const y=Y0+i*step;kb(a0+FR,a1-FR,1.5,D-3.5,y-.5,y+.5,MAT.glass,false);shelf.push(y+.5);}
+  const levels=[Y0,...shelf];                                                    // 8 compartments, bottom to top
+  const X=b=>kxm(b),Z=a=>kzm(a),am=(a0+a1)/2;
+  const wine=(a,b,y)=>{CYL(scene,.03,.032,.004,X(b),y/100,Z(a),MAT.glassC,12);CYL(scene,.004,.004,.09,X(b),y/100,Z(a),MAT.glassC,6);
+    CYL(scene,.038,.022,.085,X(b),y/100+.09,Z(a),MAT.glassC,14);};
+  const vase=(a,b,y,r,h,mat)=>{CYL(scene,r*.55,r*.7,h*.15,X(b),y/100,Z(a),mat,16);CYL(scene,r*.6,r,h*.6,X(b),y/100+h*.15,Z(a),mat,16);CYL(scene,r*.35,r*.6,h*.25,X(b),y/100+h*.75,Z(a),mat,16);};
+  const bowl=(a,b,y)=>{CYL(scene,.11,.05,.07,X(b),y/100,Z(a),MAT.blackK,24);};
+  const L=levels;
+  plant(X(28),Z(a0+20),.22,.045,411,MAT.white,1,L[7]/100);vase(a1-24,28,L[7],.05,.16,MAT.glassC);
+  [a0+20,am,a1-20].forEach(a=>wine(a,28,L[6]));
+  vase(am+8,28,L[5],.075,.24,MAT.white);wine(a0+18,30,L[5]);
+  [a0+22,a1-22].forEach(a=>wine(a,26,L[4]));CYL(scene,.045,.04,.12,X(30),L[4]/100,Z(am),MAT.white,16);
+  bowl(am,30,L[3]);
+  [a0+18,am-6,a1-18].forEach(a=>wine(a,28,L[2]));
+  vase(a1-22,28,L[1],.06,.2,MAT.white);plant(X(28),Z(a0+24),.2,.05,412,MAT.white,1,L[1]/100);
+  CYL(scene,.06,.05,.14,X(30),L[0]/100,Z(am+12),MAT.white,18);CYL(scene,.045,.04,.1,X(30),L[0]/100,Z(am-16),MAT.potB,16);
 }
 
 function gx2(g){/* drawer grooves on the south run */
