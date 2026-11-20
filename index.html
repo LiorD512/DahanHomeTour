@@ -98,6 +98,8 @@
   @media (orientation:portrait){
     body.touch #tod:not(.min){left:calc(8px + env(safe-area-inset-left));right:calc(8px + env(safe-area-inset-right));bottom:calc(176px + env(safe-area-inset-bottom));width:auto}
   }
+  #doorBtn{position:fixed;left:50%;transform:translateX(-50%);bottom:112px;z-index:3;padding:12px 20px;font-size:14px;box-shadow:0 8px 28px rgba(0,0,0,.3)}
+  body.touch #doorBtn{bottom:calc(200px + env(safe-area-inset-bottom))}
   .hide{display:none!important}
 </style>
 </head>
@@ -122,6 +124,7 @@
   <div class="presets"><button data-h="8">Morning</button><button data-h="12.5">Noon</button><button data-h="16.9">Sunset</button><button data-h="21.5">Night</button></div>
 </div>
 <div id="room" class="chip"></div>
+<button id="doorBtn" class="primary hide"></button>
 <canvas id="mini" width="200" height="232"></canvas>
 <div id="joy" aria-label="Walk joystick"><div id="knob"></div></div>
 <div id="overlay"><div id="card">
@@ -173,7 +176,7 @@ function roomAt(x,y){for(const r of ROOMS){const q=r.r;if(x>=q[0]&&x<q[2]&&y>=q[
 const WALLS=[];
 const Hw=(f,c1,c2,t,ops=[],o={})=>WALLS.push({h:true,f,c1,c2,t,ops,...o});
 const Vw=(f,c1,c2,t,ops=[],o={})=>WALLS.push({h:false,f,c1,c2,t,ops,...o});
-const door=(a,b,hinge,swing)=>({k:'door',a,b,hinge,swing});
+const door=(a,b,hinge,swing,o={})=>({k:'door',a,b,hinge,swing,...o});
 const win=(a,b,sill=0.9,head=2.1)=>({k:'win',a,b,sill,head});
 const gap=(a,b,head=2.2)=>({k:'open',a,b,head});
 const slider=(a,b)=>({k:'glass',a,b,head:2.3});
@@ -193,7 +196,7 @@ Hw(424,201,233.5,EXT,[],{hgt:1.3});
 Vw(201,305,424,EXT,[],{hgt:1.3});
 Hw(305,201,276,EXT,[],{hgt:1.3});
 /* corridor, unfurnished room 3.88 x 2.80, master, en-suite 1.80 x 1.97 */
-Vw(482,282,569,INT,[gap(300,392)]);
+Vw(482,282,569,INT,[gap(300,392),door(407.75,452.75,'b',1,{glass:true,closed:true,head:2.47})]);
 Vw(482,569,711,INT);
 Vw(482,711,725,EXT);
 Hw(569,233.5,482,INT,[door(440,480,'b',-1)]);
@@ -206,7 +209,7 @@ Hw(618,387,482,INT,[door(394,434,'a',1)]);
 Hw(397,478,585,INT,[door(514,554,'b',-1)]);
 Hw(397,585,837,EXT,[door(722,768,'b',1)]);
 Vw(837,397,711,EXT,[]);
-Hw(711,478,837,EXT,[win(523,575,1.15,2.1),slider(644,821)]);
+Hw(711,478,837,EXT,[win(522.5,587.5,1.10,2.20),slider(644,821)]);
 
 /* ===================== RENDERER / SCENE ===================== */
 const canvas=document.getElementById('c');
@@ -332,6 +335,8 @@ const MAT={
   glass:new THREE.MeshStandardMaterial({color:'#d3e5f3',map:texStreak,transparent:true,opacity:.34,roughness:.02,metalness:0,side:THREE.DoubleSide,depthWrite:false}),
   white:std({color:'#f5f3ee',roughness:.5}),
   doorLeaf:std({color:'#f2efe8',roughness:.5}),
+  doorCream:std({color:'#ece6db',roughness:.42}),
+  ledEdge:new THREE.MeshBasicMaterial({color:'#ffd9a2'}),
   frontDoor:std({color:'#4b3526',roughness:.55}),
   oak:std({map:texVeneer,color:'#ffffff',roughness:.5},1.5),
   walnut:std({map:texVeneer,color:'#8d7664',roughness:.45},1.5),
@@ -380,7 +385,7 @@ function boxUV(g,w,h,d,tile){
   for(let f=0;f<6;f++){const[a,b]=dims[f];for(let i=0;i<4;i++){const k=f*4+i;uv.setXY(k,uv.getX(k)*a/tile,uv.getY(k)*b/tile);}}
   uv.needsUpdate=true;
 }
-const AABBS=[],SEGS=[],WALLBOX=[];
+const AABBS=[],SEGS=[],WALLBOX=[],DOORS=[];
 function addBox(x0,z0,x1,z1){AABBS.push([Math.min(x0,x1),Math.min(z0,z1),Math.max(x0,x1),Math.max(z0,z1)]);}
 function solid(cx,cz,w,d,ry=0){
   const c=Math.abs(Math.cos(ry)),s=Math.abs(Math.sin(ry)),ex=c*w/2+s*d/2,ez=s*w/2+c*d/2;
@@ -496,18 +501,31 @@ function openingFurn(w,op,head,sill){
   else{g.position.set(wx(w.f),0,wz(mid));g.rotation.y=-Math.PI/2;}
   scene.add(g);
   if(op.k==='door'){
-    const front=w.f===397&&op.a===722,fm=front?MAT.frontDoor:MAT.doorLeaf;
-    B(g,.05,2.1,tw+.05,-W/2-.025,0,0,MAT.white);B(g,.05,2.1,tw+.05,W/2+.025,0,0,MAT.white);
-    B(g,W+.1,.05,tw+.05,0,2.1,0,MAT.white);
-    const pv=new THREE.Group();pv.position.set(op.hinge==='a'?-W/2:W/2,0,0);g.add(pv);
+    const front=w.f===397&&op.a===722,fm=front?MAT.frontDoor:(op.cream?MAT.doorCream:MAT.doorLeaf);
+    const dh=op.head??2.1,fr=op.glass?MAT.frame:MAT.white;
+    B(g,.05,dh,tw+.05,-W/2-.025,0,0,fr);B(g,.05,dh,tw+.05,W/2+.025,0,0,fr);
+    B(g,W+.1,.05,tw+.05,0,dh,0,fr);
+    if(op.glass)B(g,.012,dh-.2,.012,W/2+.025,.1,-(tw/2+.03),MAT.ledEdge,0,false);   // LED strip on the south jamb
+    const pv=new THREE.Group();pv.position.set(op.hinge==='a'?-W/2:W/2,0,0);g.add(pv);pv.userData.dyn=true;
     const lw=W-.02,dir=op.hinge==='a'?1:-1;
-    B(pv,lw,2.06,front?.06:.04,dir*lw/2,0,0,fm);
+    if(op.glass){
+      const lh=dh-.04,cx=dir*lw/2;
+      B(pv,lw,.06,.045,cx,0,0,MAT.frame);B(pv,lw,.05,.045,cx,lh-.05,0,MAT.frame);
+      B(pv,.05,lh,.045,dir*.025,0,0,MAT.frame);B(pv,.05,lh,.045,dir*(lw-.025),0,0,MAT.frame);
+      for(let i=1;i<8;i++)B(pv,lw-.08,.02,.03,cx,i*(lh/8)-.01,0,MAT.frame);     // 8 glazing rows
+      B(pv,.02,lh-.1,.03,cx,.05,0,MAT.frame);
+      const gl=new THREE.Mesh(new THREE.PlaneGeometry(lw-.1,lh-.1),MAT.glass);gl.position.set(cx,lh/2,0);pv.add(gl);
+    }else B(pv,lw,2.06,front?.06:.04,dir*lw/2,0,0,fm);
     if(front){for(let i=1;i<6;i++)B(pv,.012,1.9,.07,dir*lw*i/6,.08,0,MAT.black);B(pv,.03,.9,.08,dir*(lw-.12),.6,0,MAT.steel);}
+    else if(op.glass){B(pv,.025,.55,.07,dir*(lw-.1),.8,0,MAT.steel);}
     else B(pv,.12,.025,.07,dir*(lw-.08),1.0,0,MAT.brass);
-    const sz=w.h?op.swing:-op.swing;pv.rotation.y=(op.hinge==='a'?-1:1)*sz*1.42;
+    const sz=w.h?op.swing:-op.swing,openAng=(op.hinge==='a'?-1:1)*sz*1.42;
+    pv.rotation.y=op.closed?0:openAng;
     g.updateMatrixWorld(true);
     const p0=pv.localToWorld(new THREE.Vector3(0,0,0)),p1=pv.localToWorld(new THREE.Vector3(dir*lw,0,0));
-    SEGS.push([p0.x,p0.z,p1.x,p1.z,.05]);
+    const seg=[p0.x,p0.z,p1.x,p1.z,.05];SEGS.push(seg);
+    const c=new THREE.Vector3();g.getWorldPosition(c);
+    DOORS.push({pv,g,seg,dir,lw,openAng,ang:pv.rotation.y,target:pv.rotation.y,center:c,name:op.glass?'glass door to the hallway':'door'});
   }else if(op.k==='open'){
     B(g,.05,head,tw+.04,-W/2-.025,0,0,MAT.white);B(g,.05,head,tw+.04,W/2+.025,0,0,MAT.white);
   }else if(op.k==='win'){
@@ -1005,56 +1023,65 @@ function rug(x,z,w,d,ry=0,round=false){
 function book(par,x,y,z,w,h,d,mat,ry=0){return B(par,w,h,d,x,y,z,mat,ry);}
 
 /* ===================== KITCHEN (matches the reference photo) ===================== */
+/* ===================== KITCHEN (Arbel Kitchens plan 30/09/2026 + photo) =====================
+   Plan frame (cm): a = along the 495 cm run, starting at the south wall; b = from the west wall toward the stools.
+   Model: x = -0.71 + b/100,  z = 6.10 - a/100.  Heights (cm): plinth 10, base 86, stone top 90, oak cabinets 155-190,
+   tall units 191, top row 191-258, ceiling 263. */
+const KX0=-0.71,KZ0=6.10,kxm=b=>KX0+b/100,kzm=a=>KZ0-a/100;
+function kb(a0,a1,b0,b1,y0,y1,mat,cast=true){return B(scene,(b1-b0)/100,(y1-y0)/100,(a1-a0)/100,kxm((b0+b1)/2),y0/100,kzm((a0+a1)/2),mat,0,cast);}
+const kGV=(a,y0,y1,bf)=>kb(a-.2,a+.2,bf-.1,bf+.25,y0,y1,MAT.seamK,false);     // vertical door gap on a west-wall-run front
+const kGH=(a0,a1,y,bf)=>kb(a0+.2,a1-.2,bf-.1,bf+.25,y-.2,y+.2,MAT.seamK,false); // horizontal drawer gap
 function kitchen(){
-  let g=G(0,.06);const xw=-.71,D=.62,fx=xw+D;
-  const gz=(x,y,z,len)=>B(g,.005,.008,len,x,y,z,MAT.seamK,0,false);           // groove running along z
-  const gy=(x,y,z,h)=>B(g,.005,h,.008,x,y,z,MAT.seamK,0,false);                // groove running up
-  const led=(x,y,z,len)=>B(g,.012,.012,len,x,y,z,MAT.ledK,0,false);
-  /* tall run, north to south: cream, fridge, double oven, cream, lit niche */
-  B(g,D,H,.5,xw+D/2,0,.25,MAT.cabK);gz(fx+.003,.9,.25,.46);gz(fx+.003,1.75,.25,.46);
-  B(g,.7,1.92,.92,xw+.35,0,.96,MAT.blackK);B(g,.62,.7,.92,xw+D/2,1.93,.96,MAT.cabK);
-  gy(xw+.7+.003,.62,.96,1.3);gz(xw+.7+.003,.62,.96,.9);
-  [.9,1.02].forEach(zz=>B(g,.02,1.0,.018,xw+.72,.7,zz,MAT.steelK,0,false));B(g,.02,.5,.018,xw+.72,.08,.96,MAT.steelK,0,false);
-  B(g,.62,.74,.6,xw+.31,0,1.72,MAT.cabK);B(g,.62,.88,.6,xw+.31,1.75,1.72,MAT.cabK);
-  [.75,1.25].forEach(y=>{B(g,.04,.5,.56,xw+.62,y,1.72,MAT.blackK);B(g,.01,.3,.46,xw+.645,y+.1,1.72,MAT.ovenGlass,0,false);
-    B(g,.025,.018,.5,xw+.65,y+.43,1.72,MAT.steelK,0,false);B(g,.012,.03,.4,xw+.645,y+.03,1.72,MAT.mt,0,false);});
-  B(g,D,H,.5,xw+D/2,0,2.27,MAT.cabK);gz(fx+.003,.85,2.27,.46);gz(fx+.003,1.7,2.27,.46);
-  /* lit glass niche */
-  B(g,.36,H,.34,xw+.18,0,2.69,MAT.cabK);B(g,.30,2.3,.015,xw+.04,.1,2.69,MAT.dark,0,false);
-  for(let i=0;i<5;i++)B(g,.3,.012,.3,xw+.19,.12+i*.46,2.69,MAT.glassC,0,false);
-  [2.54,2.84].forEach(zz=>B(g,.008,2.3,.008,xw+.345,.1,zz,MAT.ledK,0,false));
-  for(let i=0;i<4;i++){const y=.13+i*.46;
-    for(let k=0;k<3;k++){CYL(g,.005,.005,.09,xw+.1+k*.09,y,2.62+(k%2)*.05,MAT.glassC,6);SPH(g,.032,xw+.1+k*.09,y+.12,2.62+(k%2)*.05,MAT.glassC,1,1.1,1,10);}
-    if(i===1)CYL(g,.05,.04,.16,xw+.2,y,2.76,MAT.potB,16);if(i===2){SPH(g,.06,xw+.18,y+.07,2.72,MAT.ceramic,1,1.2,1);CYL(g,.07,.05,.07,xw+.1,y,2.58,MAT.black,18);}
-  }
-  CYL(g,.05,.04,.1,xw+.2,.13+3*.46,2.77,MAT.potA,14);SPH(g,.07,xw+.2,.13+3*.46+.2,2.77,MAT.plantA,1,.7,1,8);
-  solid(xw+D/2,1.43+.06,D,2.86);
-  g=scene;
-  /* west base run: hob, stone top, marble splash, LED under the oak band, full-height uppers */
-  const z0=2.94,z1=5.48,zc=(z0+z1)/2,L=z1-z0;
-  B(g,.6,.86,L,xw+.3,0,zc,MAT.cabK);gz(xw+.603,.3,zc,L-.04);gz(xw+.603,.58,zc,L-.04);gy(xw+.603,.02,zc,.26);
-  B(g,.64,.04,L+.02,xw+.32,.86,zc,MAT.quartzK);B(g,.02,.6,L,xw+.01,.9,zc,MAT.marbleK,0,false);
-  B(g,.5,.008,.56,xw+.32,.9,zc,MAT.blackK,0,false);
-  [[-.1,-.14],[.1,-.14],[-.1,.14],[.1,.14]].forEach(([a,b])=>CYL(g,.07,.07,.002,xw+.32+a,.908,zc+b,MAT.steelK,20));
-  B(g,.36,.18,L,xw+.18,1.5,zc,MAT.oakK);led(xw+.37,1.488,zc,L-.04);
-  B(g,.35,.95,L,xw+.175,1.68,zc,MAT.cabK);[-.95,-.32,.32,.95].forEach(d=>gy(xw+.353,1.7,zc+d,.9));gz(xw+.353,2.1,zc,L-.04);
-  solid(xw+.3,zc,.6,L);
-  B(g,.3,.13,.2,xw+.3,.9,z0+.25,MAT.blackK);CYL(g,.05,.05,.12,xw+.28,.9,z1-.3,MAT.potB,16);CYL(g,.035,.035,.2,xw+.3,.9,z1-.55,MAT.potA,12);
-  /* south run: stone top, sink with black tap, splash under the window */
-  const sx0=xw,sx1=1.78,sz1=6.10,sz0=5.48,sxc=(sx0+sx1)/2;
-  B(g,sx1-sx0,.86,sz1-sz0,sxc,0,(sz0+sz1)/2,MAT.cabK);
-  [.3,.58].forEach(y=>B(g,sx1-sx0-.1,.008,.005,sxc,y,sz0+.003,MAT.seamK,0,false));
-  B(g,sx1-sx0,.04,.65,sxc,.86,sz1-.325,MAT.quartzK);
-  B(g,.77,.6,.02,xw+.385,.9,sz1-.01,MAT.marbleK,0,false);B(g,1.1,.25,.02,.56,.9,sz1-.01,MAT.marbleK,0,false);
-  B(g,.5,.012,.38,.55,.9,sz1-.26,MAT.steelK,0,false);B(g,.46,.012,.34,.55,.903,sz1-.26,MAT.dark,0,false);
-  CYL(g,.02,.022,.04,.55,.9,sz1-.08,MAT.blackK,12);CYL(g,.011,.011,.3,.55,.94,sz1-.08,MAT.blackK,8);
-  const sp=new THREE.Mesh(new THREE.TorusGeometry(.1,.011,8,20,Math.PI*.85),MAT.blackK);sp.position.set(.55,1.24,sz1-.18);sp.rotation.set(0,Math.PI/2,-.2);g.add(sp);
-  CYL(g,.011,.011,.1,.55,1.14,sz1-.28,MAT.blackK,8);
-  B(g,.75,.18,.36,xw+.375,1.5,sz1-.18,MAT.oakK);B(g,.7,.012,.012,xw+.38,1.488,sz1-.34,MAT.ledK,0,false);
-  B(g,.75,.95,.35,xw+.375,1.68,sz1-.175,MAT.cabK);gy(xw+.375,1.7,sz1-.353,.9);
-  solid(sxc,(sz0+sz1)/2,sx1-sx0,sz1-sz0);
-  plant(-.4,sz1-.2,.4,.05,201,MAT.potB,1,.9);CYL(g,.07,.06,.12,1.35,.9,sz1-.2,MAT.vase,18);plant(1.35,sz1-.2,.5,.01,202,MAT.vase,1,1.0);
+  const D=60,PL=10,BT=86,TOP=90,TALL=191,U1=258;
+  const cream=MAT.cabK;
+  /* ---- base run, a 0..264.4: corner, 58.4, sink 80, 60.5 ---- */
+  kb(0,264.4,2,D-6,0,PL,MAT.dark,false);
+  kb(0,264.4,0,D,PL,BT,cream);
+  [65.5,123.9,203.9].forEach(a=>kGV(a,PL,BT,D));
+  kGV(163.9,PL,76,D);kGH(123.9,203.9,76,D);                                   // sink unit: two doors + false drawer
+  [[65.5,123.9],[203.9,264.4]].forEach(([a0,a1])=>{kGH(a0,a1,35.3,D);kGH(a0,a1,60.7,D);});   // two 3-drawer units
+  kGH(0,65.5,48,D);                                                            // corner unit
+  kb(0,264.4,0,D+2,BT,TOP,MAT.marbleK);                                        // stone top
+  kb(0,264.4,0,2,TOP,155,MAT.marbleK,false);                                   // marble splash
+  /* sink: steel bowl, black tap, drainer line */
+  {const x=kxm(26),z=kzm(163.9);
+   B(scene,.40,.012,.64,x,.9,z,MAT.steelK,0,false);B(scene,.34,.012,.58,x,.903,z,MAT.dark,0,false);
+   CYL(scene,.02,.022,.07,kxm(7.5),.9,z,MAT.blackK,12);CYL(scene,.011,.011,.30,kxm(7.5),.96,z,MAT.blackK,8);
+   const sp=new THREE.Mesh(new THREE.TorusGeometry(.1,.011,8,20,Math.PI*.85),MAT.blackK);sp.position.set(kxm(17.5),1.26,z);sp.rotation.set(0,0,-.2);scene.add(sp);}
+  /* LED strip under the oak cabinets + warm wash on the marble */
+  kb(2,262,3,33,154.4,155,MAT.ledK,false);
+  {const gl=new THREE.Mesh(new THREE.PlaneGeometry(2.62,.66),MAT.ledGlow);gl.rotation.y=Math.PI/2;gl.position.set(kxm(2.4),1.22,kzm(133));scene.add(gl);}
+  /* oak lift-up cabinets 155-190 (two doors) */
+  kb(0,264.4,0,35,155,190,MAT.oakK);kGV(124.4,155,190,35);
+  /* ---- top row 191-258: 10 doors, depth 60, plus filler to the ceiling ---- */
+  kb(0,504.4,0,D,U1-67,U1,cream);kb(0,504.4,0,D,U1,263,cream,false);
+  [62.2,124.4,164.4,204.4,264.4,324.4,376.4,428.4,466.4].forEach(a=>kGV(a,U1-67,U1,D));
+  /* ---- oven tower 264.4-324.4: two black ovens over two black drawers ---- */
+  {const a0=264.4,a1=324.4;
+   kb(a0,a1,2,D-6,0,PL,MAT.dark,false);kb(a0,a1,0,D-2,PL,TALL,MAT.blackK);
+   kb(a0+.3,a1-.3,D-2,D,PL,72,MAT.blackK);kGH(a0,a1,41,D);                       // drawers
+   [[72,131],[131,190.5]].forEach(([y0,y1])=>{
+     kb(a0+.3,a1-.3,D-2,D+.4,y0,y1,MAT.blackK);
+     kb(a0+5,a1-5,D+.4,D+.6,y0+4,y1-9,MAT.ovenGlass,false);
+     kb(a0+6,a1-6,D+1.2,D+2.4,y1-6.6,y1-5.2,MAT.steelK,false);
+     kb(a0+8,a1-8,D+.4,D+.6,y1-3.6,y1-1.6,MAT.dark,false);});}
+  /* ---- fridge 324.4-428.4: black four-door French-door model ---- */
+  {const a0=324.4,a1=428.4,am=(a0+a1)/2;
+   kb(a0,a1,0,D,0,TALL,MAT.blackK);kGV(am,0,TALL,D);kGH(a0,a1,70,D);
+   [-1.6,1.6].forEach(o=>kb(am+o-.5,am+o+.5,D+.2,D+2.8,98,150,MAT.steelK,false));
+   kb(a0+1,a1-1,D-.1,D+.15,0,.6,MAT.dark,false);}
+  /* ---- pantry 428.4-504.4 (80 nominal, 76 visible): two tall cream doors ---- */
+  kb(428.4,504.4,2,D-6,0,PL,MAT.dark,false);kb(428.4,504.4,0,D,PL,TALL,cream);kGV(466.4,PL,TALL,D);
+  /* ---- on the counter: stand mixer by the corner, coffee machine by the ovens ---- */
+  {const xm=kxm(22),zm=kzm(30);
+   B(scene,.26,.05,.2,xm,.9,zm,MAT.blackK);B(scene,.1,.30,.16,kxm(12),.9,zm,MAT.blackK);B(scene,.20,.07,.10,xm,1.15,zm,MAT.blackK);
+   CYL(scene,.10,.07,.12,xm+.0,.95,zm,MAT.steelK,20);}
+  {const xc=kxm(24),zc=kzm(232);
+   B(scene,.23,.34,.30,xc,.9,zc,MAT.blackK);B(scene,.17,.02,.20,kxm(30),1.0,kzm(232),MAT.steelK,0,false);
+   CYL(scene,.04,.035,.07,kxm(33),.9,kzm(232),MAT.potB,14);}
+  solid(kxm(D/2),kzm(264.4/2),.62,2.64);solid(kxm(D/2),kzm(384.4),.62,2.4);
 }
+
 function gx2(g){/* drawer grooves on the south run */
   [.3,.58].forEach(y=>B(g,1.58,.008,.005,.1,y,4.43+.003,MAT.seamK,0,false));
 }
@@ -1064,30 +1091,53 @@ function pendant(par,x,z,y,r=.16){
   const c=new THREE.Mesh(new THREE.CylinderGeometry(.004,.004,H-y,4),MAT.black);c.position.set(x,(H+y)/2,z);ceilG.add(c);
   const cap=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,.04,12),MAT.mt);cap.position.set(x,y+r*.95,z);ceilG.add(cap);
 }
-const stoolGroups=[];
+MAT.ledGlow=new THREE.MeshBasicMaterial({map:mkTex(64,(g,s)=>{const gr=g.createLinearGradient(0,0,0,s);gr.addColorStop(0,'rgba(255,214,150,1)');gr.addColorStop(.55,'rgba(255,196,120,.28)');gr.addColorStop(1,'rgba(255,190,110,0)');g.fillStyle=gr;g.fillRect(0,0,s,s);},true),
+  transparent:true,opacity:.4,blending:THREE.AdditiveBlending,depthWrite:false});
+MAT.stoolK=fab('#1b1c1e');
+const kGVs=(b,y0,y1,af)=>kb(af-.1,af+.25,b-.2,b+.2,y0,y1,MAT.seamK,false);        // groove on a south-run front (plane a=af)
+const kGHs=(b0,b1,y,af)=>kb(af-.1,af+.25,b0+.2,b1-.2,y-.2,y+.2,MAT.seamK,false);
+const kGVp=(a,y0,y1,bf)=>kb(a-.2,a+.2,bf-.25,bf+.1,y0,y1,MAT.seamK,false);        // groove on the peninsula kitchen side (plane b=bf, faces west)
+const kGHp=(a0,a1,y,bf)=>kb(a0+.2,a1-.2,bf-.25,bf+.1,y-.2,y+.2,MAT.seamK,false);
+function kitchenSouth(){
+  const PL=10,BT=86,TOP=90,SF=60,cream=MAT.cabK;
+  /* south-wall run: 65.5 corner | 40 | 60 with hob | peninsula corner unit */
+  kb(0,SF,60,165.5,PL,BT,cream);kb(0,SF,60,165.5,0,PL,MAT.dark,false);
+  [65.5,105.5,165.5].forEach(b=>kGVs(b,PL,BT,SF));
+  kGHs(65.5,105.5,48,SF);kGHs(105.5,165.5,35.3,SF);kGHs(105.5,165.5,60.7,SF);
+  kb(0,62,0,165.5,BT,TOP,MAT.marbleK);                                          // stone top, same slab as the north run
+  /* induction hob 60 cm: black glass + four rings */
+  kb(5,55,109,162,TOP,TOP+.8,MAT.blackK,false);
+  [[123,17],[148,17],[123,41],[148,41]].forEach(([b,a])=>{const r=new THREE.Mesh(new THREE.TorusGeometry(.075,.003,6,28),MAT.steelK);r.rotation.x=Math.PI/2;r.position.set(kxm(b),.909,kzm(a));scene.add(r);});
+  /* styling: tray, plant in a black pot, bottle */
+  kb(18,40,72,98,TOP,TOP+1.2,MAT.dark,false);plant(kxm(85),kzm(29),.34,.045,301,MAT.blackK,1,.92);
+  CYL(scene,.022,.026,.2,kxm(94),.92,kzm(35),MAT.glassC,12);CYL(scene,.05,.045,.05,kxm(78),.92,kzm(21),MAT.potB,14);
+  /* blind box above the window (window x 0.05..1.35, sill 1.10, head 2.20) */
+  B(scene,1.36,.13,.12,.70,2.2,KZ0-.06,MAT.frame);
+  solid(kxm(115),kzm(31),2.3,.62);
+}
 function barStool(x,z){
   const g=G(x,z,-Math.PI/2);stoolGroups.push(g);
-  RB(g,.4,.07,.4,0,.62,0,MAT.stoolK,.03);RB(g,.38,.27,.07,0,.74,-.2,MAT.stoolK,.03,0,0,-.18);
-  [[-.15,-.15],[.15,-.15],[-.15,.15],[.15,.15]].forEach(p=>CYL(g,.011,.011,.62,p[0],0,p[1],MAT.blackK,8));
-  [[0,-.15,.3,.012],[0,.15,.3,.012]].forEach(p=>B(g,.3,.012,.012,p[0],.27,p[1],MAT.blackK,0,false));
-  [[-.15,0],[.15,0]].forEach(p=>B(g,.012,.012,.3,p[0],.27,p[1],MAT.blackK,0,false));
+  RB(g,.38,.07,.38,0,.56,0,MAT.stoolK,.035);                                    // seat top 63 cm
+  RB(g,.36,.26,.06,0,.64,-.2,MAT.stoolK,.04,0,0,-.12);                           // low rounded back
+  [[-.15,-.15],[.15,-.15],[-.15,.15],[.15,.15]].forEach(p=>{const l=CYL(g,.009,.012,.56,p[0]*1.08,0,p[1]*1.08,MAT.blackK,8);l.rotation.z=-p[0]*.08;});
+  const t=new THREE.Mesh(new THREE.TorusGeometry(.15,.007,6,24),MAT.blackK);t.rotation.x=Math.PI/2;t.position.y=.26;g.add(t);
 }
+const stoolGroups=[];
 function island(){
-  const g=scene,z0=3.0,z1=5.48,zc=(z0+z1)/2,L=z1-z0;
-  B(g,.72,.9,L,1.28,0,zc,MAT.cabK);
-  B(g,.03,.88,L,1.655,0,zc,MAT.oakK);B(g,.72,.88,.03,1.28,0,z0+.015,MAT.oakK);
-  [.3,.58].forEach(y=>B(g,.005,.008,L-.1,.918,y,zc,MAT.seamK,0,false));
-  B(g,.84,.04,L+.06,1.3,.9,zc,MAT.quartzK);B(g,.008,.044,L+.06,1.723,.9,zc,MAT.steelK,0,false);
-  [0,1,2,3,4].forEach(i=>barStool(2.02,z0+.35+i*.5));
-  [-.8,0,.8].forEach(d=>pendant(g,1.3,zc+d,1.72,.15));
-  solid(1.3,zc,.84,L+.06);
-  /* styling on the stone: fruit bowl, cups on a tray, branches, cookbook */
-  const bw=G(1.25,zc-.55,0,.94,g);CYL(bw,.15,.1,.07,0,0,0,MAT.potB,28);
-  [[0,.1,0,'#e48a2d'],[.07,.1,.05,'#e8b53a'],[-.06,.1,.04,'#d5d94a'],[0,.14,-.05,'#e48a2d'],[-.05,.1,-.06,'#c8352d']].forEach(([x,y,z,c])=>SPH(bw,.045,x,y,z,cm(c,.5),1,1,1,10));
-  const tr=G(1.35,zc+.55,0,.94,g);B(tr,.4,.02,.26,0,0,0,MAT.wd);CYL(tr,.04,.032,.08,-.08,.02,0,MAT.potB,16);CYL(tr,.04,.032,.08,.08,.02,.03,MAT.potB,16);
-  B(g,.3,.03,.22,1.2,.94,zc+1.0,MAT.paperW,.3);B(g,.28,.03,.2,1.2,.97,zc+1.0,MAT.dark,.3);
-  plant(1.2,zc,.7,.1,5,MAT.vase,1,.94);
+  /* peninsula: 65.5 corner unit + 100 + 100 + 55 = 320.5 cm, kitchen side cream drawers, stool side oak, stone top with waterfall end */
+  const PL=10,BT=86,TOP=90,cream=MAT.cabK,AE=320.5;
+  kb(0,65.5,60,224,PL,BT,cream);                                               // corner unit joins the south run
+  kb(65.5,AE,167.7,222,PL,BT,cream);kb(0,AE,167.7,224.5,0,PL,MAT.dark,false);
+  kb(0,AE,222,224.5,PL,BT,MAT.oakK);                                           // oak front facing the stools
+  [165.5,265.5].forEach(a=>kGVp(a,PL,BT,167.7));
+  [[65.5,165.5],[165.5,265.5]].forEach(([a0,a1])=>{kGHp(a0,a1,35.3,167.7);kGHp(a0,a1,60.7,167.7);});
+  kGHp(265.5,AE,48,167.7);
+  kb(0,AE,165.5,254,BT,TOP,MAT.marbleK);                                       // slab, 29.5 cm overhang on the stool side
+  kb(AE-3,AE,165.5,254,0,TOP,MAT.marbleK);                                     // stone waterfall end
+  const sb=256;[45,107.5,170,232.5,295].forEach(a=>barStool(kxm(sb),kzm(a)));
+  solid(kxm(209.75),kzm(160.25),.885,3.205);
 }
+
 
 /* ===================== SOFA (3.0 m, as in the reference photo) ===================== */
 let SOFA_MINX=0,SOFA_MAXX=0,STOOL_BACK=0;const SOFA_Z=3.35,TV_Z=3.35,EAST_IN=wx(837)-.12;
@@ -1408,7 +1458,7 @@ function balconies(){
 }
 function extraLights(){}
 function buildFurniture(){
-  kitchen();island();sofa();tvWall();dining();lounge();
+  kitchen();kitchenSouth();island();sofa();tvWall();dining();lounge();
   masterBedroom();ensuite();bathroom();kidsRoom();babyRoom();nailStudio();hallAndCorridor();balconies();extraLights();
 }
 
@@ -1461,7 +1511,7 @@ function applyLights(){
   const pf=TOD.day+1.1*lvl;
   lightsOn.points.forEach(o=>{o.l.intensity=o.I*pf;o.l.color.copy(styleLight);});
   MAT.glow.color.copy(styleGlowC).multiplyScalar(.35+2.1*lvl);
-  MAT.shade.emissiveIntensity=.12+1.15*lvl;MAT.ledK.color.copy(ledBase).multiplyScalar(.75+1.2*lvl);
+  MAT.shade.emissiveIntensity=.12+1.15*lvl;MAT.ledGlow.opacity=.30+.6*lvl;MAT.ledK.color.copy(ledBase).multiplyScalar(.75+1.2*lvl);MAT.ledEdge.color.copy(ledBase).multiplyScalar(.75+1.2*lvl);
   haloMats.forEach(m=>{m.opacity=lvl*.5;m.color.copy(styleGlowC);m.visible=lvl>.02;});
 }
 function cycleLights(){
@@ -1558,6 +1608,7 @@ function adaptRes(dt){
   lastPR=now;renderer.setPixelRatio(prCur);renderer.setSize(innerWidth,innerHeight,false);
 }
 function tickTime(dt){
+  tickDoors(dt);
   if(playing){todTarget+=dt*PLAY_SPEED;if(todTarget>24){todTarget=6;todCur=6;}$('todRange').value=todTarget;}
   const diff=todTarget-todCur;if(Math.abs(diff)>1e-4)todCur+=diff*(1-Math.exp(-9*dt));
   if(timeDirty||Math.abs(todCur-TOD.h)>.003){timeDirty=false;applyTime(todCur);updateTodUI();}
@@ -1578,7 +1629,7 @@ addEventListener('keydown',e=>{
 });
 $('lightsBtn').textContent='Lights: auto'+KH('L');
 buildHalos();
-mergeStatic(scene,o=>o===ceilG||o===cityG||o===marker||o===sky||o.isPoints||(o.isMesh&&o.material===tvScreen));
+mergeStatic(scene,o=>o===ceilG||o===cityG||o===marker||o===sky||o.isPoints||(o.userData&&o.userData.dyn)||(o.isMesh&&o.material===tvScreen));
 mergeStatic(ceilG,o=>o.isPoints);mergeStatic(cityG,()=>false);
 updateEnv();applyTime(todCur);updateTodUI();refreshShadows();
 Object.assign(window.__tour,{setTime:h=>{todTarget=todCur=h;timeDirty=true;todRange.value=h;},TOD,get lightMode(){return lightMode;},cycleLights,
@@ -1593,6 +1644,41 @@ Object.assign(window.__tour,{setTime:h=>{todTarget=todCur=h;timeDirty=true;todRa
   $('todIcon').addEventListener('click',flip);$('todLabel').addEventListener('click',flip);
 }
 if(IS_TOUCH){['floorConcrete','floorBath'].forEach(k=>{MAT[k].clearcoat=0;MAT[k].needsUpdate=true;});}
+
+/* ---------- openable doors (kitchen door to the hallway + every other swing door) ---------- */
+let nearDoor=null;
+const doorBtn=$('doorBtn');
+function toggleDoor(d){if(!d)return;d.target=Math.abs(d.target)<1e-3?d.openAng:0;}
+function tickDoors(dt){
+  let moved=false;const v0=new THREE.Vector3(),v1=new THREE.Vector3();
+  for(const d of DOORS){
+    const diff=d.target-d.ang;
+    if(Math.abs(diff)>1e-4){
+      d.ang=Math.abs(diff)<.004?d.target:d.ang+diff*(1-Math.exp(-7*dt));
+      d.pv.rotation.y=d.ang;d.pv.updateMatrixWorld(true);
+      v0.set(0,0,0);v1.set(d.dir*d.lw,0,0);d.pv.localToWorld(v0);d.pv.localToWorld(v1);
+      d.seg[0]=v0.x;d.seg[1]=v0.z;d.seg[2]=v1.x;d.seg[3]=v1.z;moved=true;
+    }
+  }
+  if(moved)renderer.shadowMap.needsUpdate=true;
+  nearDoor=null;
+  if(mode==='walk'&&!anim&&$('overlay').classList.contains('hide')){
+    const fx=-Math.sin(player.yaw),fz=-Math.cos(player.yaw);let best=2.3;
+    for(const d of DOORS){
+      const dx=d.center.x-player.x,dz=d.center.z-player.z,dist=Math.hypot(dx,dz);
+      if(dist<best&&(dx*fx+dz*fz)/Math.max(dist,.01)>.35){best=dist;nearDoor=d;}
+    }
+  }
+  if(nearDoor){
+    const isOpen=Math.abs(nearDoor.target)>1e-3;
+    doorBtn.textContent=(isOpen?'Close ':'Open ')+nearDoor.name+(document.body.classList.contains('touch')?'':' (E)');
+    doorBtn.classList.remove('hide');
+  }else doorBtn.classList.add('hide');
+}
+doorBtn.addEventListener('click',e=>{toggleDoor(nearDoor);e.stopPropagation();});
+addEventListener('keydown',e=>{if(e.code==='KeyE'&&!e.repeat)toggleDoor(nearDoor);});
+canvas.addEventListener('click',()=>{if(locked&&nearDoor)toggleDoor(nearDoor);});
+Object.assign(window.__tour,{DOORS,toggleDoor});
 </script>
 </body>
 </html>
