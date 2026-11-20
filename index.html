@@ -1088,7 +1088,10 @@ function kitchen(){
    const p0=pv.localToWorld(new THREE.Vector3()),p1=pv.localToWorld(new THREE.Vector3(lw,0,0));
    const seg=[p0.x,p0.z,p1.x,p1.z,.05];SEGS.push(seg);
    DOORS.push({pv,g,seg,dir:1,lw,openAng:1.5,ang:0,target:0,center:new THREE.Vector3(kxm(30),0,kzm((a0+a1)/2)),name:'door to the hallway'});}
-  vitrine(504.4,594.5,D);kb(594.5,604,0,D,0,263,cream);                          // cream filler to the corner
+  /* ---- tall cream unit 504.4-604 (two doors) with the top row above, as in the photo ---- */
+  kb(504.4,604,2,D-6,0,PL,MAT.dark,false);kb(504.4,604,0,D,PL,TALL,cream);
+  kb(504.4,604,0,D,U1-67,U1,cream);kb(504.4,604,0,D,U1,263,cream,false);
+  kGV(504.4,PL,U1,D);kGV(554.2,PL,U1,D);kGH(504.4,604,191,D);
   /* ---- on the counter: stand mixer by the corner, coffee machine by the ovens ---- */
   {const xm=kxm(22),zm=kzm(30);
    B(scene,.26,.05,.2,xm,.9,zm,MAT.blackK);B(scene,.1,.30,.16,kxm(12),.9,zm,MAT.blackK);B(scene,.20,.07,.10,xm,1.15,zm,MAT.blackK);
@@ -1098,31 +1101,32 @@ function kitchen(){
    CYL(scene,.04,.035,.07,kxm(33),.9,kzm(232),MAT.potB,14);}
   solid(kxm(D/2),kzm(264.4/2),.62,2.64);solid(kxm(D/2),kzm(346.4),.62,1.64);solid(kxm(D/2),kzm(554.2),.64,.996);
 }
-/* vitrine: black-framed glass display cabinet, floor to ceiling, oak back, glass shelves, LED on both sides */
-function vitrine(a0,a1,D){
-  const fr=MAT.frame,T=263,Y0=10,Y1=257,FR=3;
-  kb(a0,a1,0,D+1,0,Y0,fr);kb(a0,a1,0,D+1,Y1,T,fr);                              // plinth + head
-  kb(a0,a0+FR,0,D+1,Y0,Y1,fr);kb(a1-FR,a1,0,D+1,Y0,Y1,fr);                      // side posts
-  kb(a0+FR,a1-FR,0,1.5,Y0,Y1,MAT.oakK);                                         // oak back panel
-  kb(a0+FR,a1-FR,D,D+.4,Y0,Y1,MAT.glass,false);                                 // glass front
-  [a0+FR+.1,a1-FR-.7].forEach(a=>kb(a,a+.6,D-3,D-2,Y0+1,Y1-1,MAT.ledK,false));  // vertical LED strips
-  const n=8,step=(Y1-Y0)/n,shelf=[];
-  for(let i=1;i<n;i++){const y=Y0+i*step;kb(a0+FR,a1-FR,1.5,D-3.5,y-.5,y+.5,MAT.glass,false);shelf.push(y+.5);}
-  const levels=[Y0,...shelf];                                                    // 8 compartments, bottom to top
-  const X=b=>kxm(b),Z=a=>kzm(a),am=(a0+a1)/2;
-  const wine=(a,b,y)=>{CYL(scene,.03,.032,.004,X(b),y/100,Z(a),MAT.glassC,12);CYL(scene,.004,.004,.09,X(b),y/100,Z(a),MAT.glassC,6);
-    CYL(scene,.038,.022,.085,X(b),y/100+.09,Z(a),MAT.glassC,14);};
-  const vase=(a,b,y,r,h,mat)=>{CYL(scene,r*.55,r*.7,h*.15,X(b),y/100,Z(a),mat,16);CYL(scene,r*.6,r,h*.6,X(b),y/100+h*.15,Z(a),mat,16);CYL(scene,r*.35,r*.6,h*.25,X(b),y/100+h*.75,Z(a),mat,16);};
-  const bowl=(a,b,y)=>{CYL(scene,.11,.05,.07,X(b),y/100,Z(a),MAT.blackK,24);};
-  const L=levels;
-  plant(X(28),Z(a0+20),.22,.045,411,MAT.white,1,L[7]/100);vase(a1-24,28,L[7],.05,.16,MAT.glassC);
-  [a0+20,am,a1-20].forEach(a=>wine(a,28,L[6]));
-  vase(am+8,28,L[5],.075,.24,MAT.white);wine(a0+18,30,L[5]);
-  [a0+22,a1-22].forEach(a=>wine(a,26,L[4]));CYL(scene,.045,.04,.12,X(30),L[4]/100,Z(am),MAT.white,16);
-  bowl(am,30,L[3]);
-  [a0+18,am-6,a1-18].forEach(a=>wine(a,28,L[2]));
-  vase(a1-22,28,L[1],.06,.2,MAT.white);plant(X(28),Z(a0+24),.2,.05,412,MAT.white,1,L[1]/100);
-  CYL(scene,.06,.05,.14,X(30),L[0]/100,Z(am+12),MAT.white,18);CYL(scene,.045,.04,.1,X(30),L[0]/100,Z(am-16),MAT.potB,16);
+/* vitrine (position A): black-framed glass display cabinet on the north wall, east of the hall opening.
+   Floor to ceiling, 90 cm wide, 45 cm deep, oak back, 7 glass shelves, LED on both sides. u = cm from the west edge, v = cm out from the wall. */
+function vitrine(){
+  const X0=0.75,ZW=0.06,WD=90,DP=45,fr=MAT.frame,T=263,Y0=10,Y1=257,FR=3;
+  const vb=(u0,u1,v0,v1,y0,y1,mat,cast=true)=>B(scene,(u1-u0)/100,(y1-y0)/100,(v1-v0)/100,X0+(u0+u1)/200,y0/100,ZW+(v0+v1)/200,mat,0,cast);
+  const X=u=>X0+u/100,Z=v=>ZW+v/100;
+  vb(0,WD,0,DP+1,0,Y0,fr);vb(0,WD,0,DP+1,Y1,T,fr);                              // plinth + head
+  vb(0,FR,0,DP+1,Y0,Y1,fr);vb(WD-FR,WD,0,DP+1,Y0,Y1,fr);                        // side posts
+  vb(FR,WD-FR,0,1.5,Y0,Y1,MAT.oakK);                                            // oak back panel
+  vb(FR,WD-FR,DP,DP+.4,Y0,Y1,MAT.glass,false);                                  // glass front
+  [FR+.1,WD-FR-.7].forEach(u=>vb(u,u+.6,DP-3,DP-2,Y0+1,Y1-1,MAT.ledK,false));  // vertical LED strips
+  const n=8,step=(Y1-Y0)/n,L=[Y0];
+  for(let i=1;i<n;i++){const y=Y0+i*step;vb(FR,WD-FR,1.5,DP-3.5,y-.5,y+.5,MAT.glass,false);L.push(y+.5);}
+  const um=WD/2,vm=DP/2;
+  const wine=(u,y)=>{CYL(scene,.03,.032,.004,X(u),y/100,Z(vm),MAT.glassC,12);CYL(scene,.004,.004,.09,X(u),y/100,Z(vm),MAT.glassC,6);
+    CYL(scene,.038,.022,.085,X(u),y/100+.09,Z(vm),MAT.glassC,14);};
+  const vase=(u,y,r,h,mat)=>{CYL(scene,r*.55,r*.7,h*.15,X(u),y/100,Z(vm),mat,16);CYL(scene,r*.6,r,h*.6,X(u),y/100+h*.15,Z(vm),mat,16);CYL(scene,r*.35,r*.6,h*.25,X(u),y/100+h*.75,Z(vm),mat,16);};
+  plant(X(20),Z(vm),.22,.045,411,MAT.white,1,L[7]/100);vase(WD-22,L[7],.05,.16,MAT.glassC);
+  [18,um,WD-18].forEach(u=>wine(u,L[6]));
+  vase(um+8,L[5],.075,.24,MAT.white);wine(16,L[5]);
+  [20,WD-20].forEach(u=>wine(u,L[4]));CYL(scene,.045,.04,.12,X(um),L[4]/100,Z(vm),MAT.white,16);
+  CYL(scene,.11,.05,.07,X(um),L[3]/100,Z(vm),MAT.blackK,24);
+  [16,um-6,WD-16].forEach(u=>wine(u,L[2]));
+  vase(WD-20,L[1],.06,.2,MAT.white);plant(X(22),Z(vm),.2,.05,412,MAT.white,1,L[1]/100);
+  CYL(scene,.06,.05,.14,X(um+12),L[0]/100,Z(vm),MAT.white,18);CYL(scene,.045,.04,.1,X(um-16),L[0]/100,Z(vm),MAT.potB,16);
+  solid(X0+WD/200,ZW+(DP+1)/200,WD/100,(DP+1)/100);
 }
 
 function gx2(g){/* drawer grooves on the south run */
@@ -1269,7 +1273,8 @@ function dining(){
   for(let i=0;i<8;i++){const a=i/8*6.283,s=new THREE.Mesh(new THREE.SphereGeometry(.04,12,8),MAT.glow);s.position.set(cx+Math.cos(a)*.55*1.4,1.72,cz+Math.sin(a)*.55*.9);ceilG.add(s);}
   [-.5,.5].forEach(dx=>{const c=new THREE.Mesh(new THREE.CylinderGeometry(.003,.003,H-1.72,4),MAT.black);c.position.set(cx+dx,(H+1.72)/2,cz);ceilG.add(c);});
   /* triptych on the north wall */
-  [1.55,2.5,3.45].forEach((x,i)=>artwork(g,.62,.95,x,1.1,.085,0,i+1,i%3));
+  /* two prints centred on the table (the vitrine now takes the west end of this wall) */
+  [cx-.38,cx+.38].forEach((x,i)=>artwork(g,.62,.95,x,1.1,.085,0,i+1,i%3));
 }
 function lounge(){
   const g=scene,ze=EAST_IN,cz=TV_Z,tx=SOFA_MAXX+.62,rx0=SOFA_MAXX-.6,rx1=ze-.1;
@@ -1279,11 +1284,6 @@ function lounge(){
   book(g,tx,.4,cz-.35,.26,.04,.2,MAT.paperW,.2);book(g,tx,.44,cz-.35,.22,.035,.17,MAT.mt,.1);
   CYL(g,.04,.035,.12,tx-.1,.3,cz+.35,MAT.vase,16);plant(tx-.1,cz+.35,.35,.01,95,MAT.vase,1,.42);
   solid(tx,cz-.35,.56,.56);solid(tx-.1,cz+.35,.4,.4);
-  /* entry console + round mirror on the north wall, east of the front door */
-  B(g,.96,.8,.34,5.6,0,.23,MAT.wd);B(g,.9,.7,.005,5.6,.05,.405,MAT.seamK,0,false);solid(5.6,.23,.96,.34);
-  const mr=new THREE.Mesh(new THREE.CircleGeometry(.4,40),MAT.mirror);mr.position.set(5.6,1.5,.075);g.add(mr);
-  const fr=new THREE.Mesh(new THREE.TorusGeometry(.4,.014,8,48),MAT.mt);fr.position.set(5.6,1.5,.082);g.add(fr);
-  lamp(g,5.3,.8,.2,.4,.12);CYL(g,.09,.07,.05,5.75,.8,.2,MAT.mt,18);CYL(g,.05,.04,.18,5.9,.8,.2,MAT.vase,14);
   /* sheer curtains along the balcony door, floor lamp, big plants */
   sheerAt(wx(644),5.95,wx(821),5.95,0,2.5,16);
   const fl=G(4.3,5.4);CYL(fl,.14,.14,.02,0,0,0,MAT.black,20);CYL(fl,.012,.012,1.6,0,0,0,MAT.mt,8);
@@ -1501,7 +1501,7 @@ function balconies(){
 }
 function extraLights(){}
 function buildFurniture(){
-  kitchen();kitchenSouth();island();sofa();tvWall();dining();lounge();
+  kitchen();kitchenSouth();island();vitrine();sofa();tvWall();dining();lounge();
   masterBedroom();ensuite();bathroom();kidsRoom();babyRoom();nailStudio();hallAndCorridor();balconies();extraLights();
 }
 
