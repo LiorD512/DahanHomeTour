@@ -658,8 +658,23 @@ function orbitPose(c){
 }
 const walkFovBase=()=>{const a=camera.aspect;return a>=1.2?72:Math.min(95,72+(1.2-a)*40);};
 /* walk-mode zoom: 1 = normal view, below 1 = zoomed in (narrower field of view), above 1 = wider */
-const ZOOM_MIN=.3,ZOOM_MAX=1.25;let zoomCur=1,zoomTarget=1;
-const walkFov=()=>walkFovBase()*zoomCur;
+/* zoom < 1: narrower field of view (zoom in). zoom > 1: the camera pulls back behind the player, up to 2.5 m, slightly higher and a bit wider (zoom out) */
+const ZOOM_MIN=.3,ZOOM_MAX=2,PULL_MAX=2.5;let zoomCur=1,zoomTarget=1,pullCur=0;
+const walkFov=()=>walkFovBase()*(zoomCur<=1?zoomCur:1+.15*(zoomCur-1));
+/* zoom-out clamp: CAMBOX holds the floor outline of everything that reaches camera height (walls, glass, tall cabinets,
+   vitrine, TV wall), collected once at load. The camera stops 25 cm short of any of them or of a door leaf;
+   low furniture like the sofa does not block it. Cheap 2D test, so it costs well under 1 ms per frame. */
+const CAMBOX=[];
+function pullBack(want){
+  const bx=Math.sin(player.yaw),bz=Math.cos(player.yaw),m=.25;let d=0;
+  for(let s=.05;s<=want+1e-6;s+=.05){
+    const x=player.x+bx*s,z=player.z+bz*s;let hit=false;
+    for(const b of CAMBOX)if(x>b[0]-m&&x<b[2]+m&&z>b[1]-m&&z<b[3]+m){hit=true;break;}
+    if(!hit)for(const[x1,z1,x2,z2]of SEGS){const vx=x2-x1,vz=z2-z1;let t=((x-x1)*vx+(z-z1)*vz)/(vx*vx+vz*vz);t=Math.max(0,Math.min(1,t));if(Math.hypot(x-x1-vx*t,z-z1-vz*t)<m){hit=true;break;}}
+    if(hit)break;d=s;
+  }
+  return Math.min(d,want);
+}
 const orbitFov=()=>camera.aspect<1?55:40;
 function camFor(m){
   const c=tmpCam;
@@ -675,12 +690,13 @@ const marker=new THREE.Group();
  const wedge=new THREE.Mesh(new THREE.ConeGeometry(.16,.5,4),m1);wedge.rotation.x=-Math.PI/2;wedge.position.set(0,1.05,-.4);
  marker.add(cone,head,wedge);marker.visible=false;scene.add(marker);}
 function setHint(){
-  $('hint').textContent=mode==='walk'?(locked?'WASD walk · mouse look · wheel zoom (0 resets) · Shift run · V dollhouse · Esc frees the mouse':'Click the view to capture the mouse (or drag to look) · WASD walk · wheel zoom · V dollhouse')
+  $('hint').textContent=mode==='walk'?(locked?'WASD walk · mouse look · wheel zoom in/out (0 resets) · Shift run · V dollhouse · Esc frees the mouse':'Click the view to capture the mouse (or drag to look) · WASD walk · wheel zoom · V dollhouse')
     :'Drag to orbit · scroll to zoom · WASD pan · V back to walking';
   $('modeBtn').textContent=document.body.classList.contains('touch')?(mode==='walk'?'Dollhouse':'Walk'):(mode==='walk'?'Dollhouse view (V)':'Back to walking (V)');
 }
 function setMode(m){
   if(anim||m===mode)return;
+  zoomTarget=zoomCur=1;pullCur=0;if(mode==='walk')camera.position.set(player.x,1.6,player.z);
   if(m==='doll'&&camera.aspect<1)orbit.dist=Math.max(orbit.dist,28);
   const from={p:camera.position.clone(),q:camera.quaternion.clone(),fov:camera.fov},to=camFor(m);
   if(m==='doll'){
@@ -713,7 +729,7 @@ addEventListener('mouseup',()=>{drag=false;});
 addEventListener('mousemove',e=>{
   if(anim)return;
   if(mode==='walk'&&(locked||drag)){
-    const ls=.0022*zoomCur;player.yaw-=e.movementX*ls;player.pitch=Math.max(-1.35,Math.min(1.35,player.pitch-e.movementY*ls));
+    const ls=.0022*Math.min(1,zoomCur);player.yaw-=e.movementX*ls;player.pitch=Math.max(-1.35,Math.min(1.35,player.pitch-e.movementY*ls));
   }else if(mode==='doll'&&drag){
     orbit.az-=e.movementX*.006;orbit.pol=Math.max(.05,Math.min(1.35,orbit.pol-e.movementY*.004));
   }
@@ -833,7 +849,9 @@ function step(dt){
     const n=Math.max(1,Math.ceil(Math.hypot(player.vx,player.vz)*dt/.08));
     for(let i=0;i<n;i++){player.x+=player.vx*dt/n;player.z+=player.vz*dt/n;resolve(player);}
     const moving=Math.hypot(player.vx,player.vz);player.t+=dt*moving*2.6;
-    camera.position.set(player.x,1.6+Math.sin(player.t)*.012*Math.min(1,moving),player.z);
+    const want=zoomCur>1?(zoomCur-1)*PULL_MAX:0,free=want>0?pullBack(want):0;
+    pullCur+=(free-pullCur)*(1-Math.exp(-(free<pullCur?25:8)*dt));if(want===0&&pullCur<1e-3)pullCur=0;
+    camera.position.set(player.x+Math.sin(player.yaw)*pullCur,1.6+pullCur*.16+Math.sin(player.t)*.012*Math.min(1,moving),player.z+Math.cos(player.yaw)*pullCur);
     camera.rotation.set(player.pitch,player.yaw,0,'YXZ');
     if(Math.abs(zoomTarget-zoomCur)>1e-4){zoomCur+=(zoomTarget-zoomCur)*(1-Math.exp(-12*dt));if(Math.abs(zoomTarget-zoomCur)<1e-3)zoomCur=zoomTarget;camera.fov=walkFov();camera.updateProjectionMatrix();}
     const r=roomAt(ipx(player.x),ipy(player.z));$('room').textContent=r?r.name:'Outside';
@@ -1681,6 +1699,12 @@ addEventListener('keydown',e=>{
 });
 $('lightsBtn').textContent='Lights: auto'+KH('L');
 buildHalos();
+/* camera-height outlines for the zoom-out clamp (must run before the meshes are merged) */
+{const bb=new THREE.Box3();scene.traverse(o=>{
+  if(!o.isMesh||o===sky)return;for(let p=o;p;p=p.parent)if(p===cityG||p===ceilG||p===marker||(p.userData&&p.userData.dyn))return;
+  const mt=Array.isArray(o.material)?o.material[0]:o.material;if(mt&&mt.transparent&&mt.opacity<.3&&mt!==MAT.glass)return;
+  bb.setFromObject(o);if(bb.max.y<1.5||bb.min.y>2.2)return;if((bb.max.x-bb.min.x)*(bb.max.z-bb.min.z)<.0004)return;
+  CAMBOX.push([bb.min.x,bb.min.z,bb.max.x,bb.max.z]);});}
 mergeStatic(scene,o=>o===ceilG||o===cityG||o===marker||o===sky||o.isPoints||(o.userData&&o.userData.dyn)||(o.isMesh&&o.material===tvScreen));
 mergeStatic(ceilG,o=>o.isPoints);mergeStatic(cityG,()=>false);
 updateEnv();applyTime(todCur);updateTodUI();refreshShadows();
