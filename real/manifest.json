@@ -1,0 +1,17 @@
+{
+ "range": 6.0,
+ "exposure": 1.516,
+ "spec": 1.0,
+ "emit": {
+  "ledK": 3.0,
+  "ledEdge": 3.0
+ },
+ "lm": {
+  "balc": "lm/balc.png",
+  "ceil": "lm/ceil.png",
+  "corridor": "lm/corridor.png",
+  "hall": "lm/hall.png",
+  "living": "lm/living.png"
+ },
+ "probe": "probe.png"
+}
