@@ -656,7 +656,10 @@ function orbitPose(c){
   c.position.set(orbit.cx+orbit.dist*sp*Math.sin(orbit.az),orbit.dist*Math.cos(orbit.pol),orbit.cz+orbit.dist*sp*Math.cos(orbit.az));
   c.up.set(0,1,0);c.lookAt(orbit.cx,0,orbit.cz);
 }
-const walkFov=()=>{const a=camera.aspect;return a>=1.2?72:Math.min(95,72+(1.2-a)*40);};
+const walkFovBase=()=>{const a=camera.aspect;return a>=1.2?72:Math.min(95,72+(1.2-a)*40);};
+/* walk-mode zoom: 1 = normal view, below 1 = zoomed in (narrower field of view), above 1 = wider */
+const ZOOM_MIN=.3,ZOOM_MAX=1.25;let zoomCur=1,zoomTarget=1;
+const walkFov=()=>walkFovBase()*zoomCur;
 const orbitFov=()=>camera.aspect<1?55:40;
 function camFor(m){
   const c=tmpCam;
@@ -672,7 +675,7 @@ const marker=new THREE.Group();
  const wedge=new THREE.Mesh(new THREE.ConeGeometry(.16,.5,4),m1);wedge.rotation.x=-Math.PI/2;wedge.position.set(0,1.05,-.4);
  marker.add(cone,head,wedge);marker.visible=false;scene.add(marker);}
 function setHint(){
-  $('hint').textContent=mode==='walk'?(locked?'WASD walk · mouse look · Shift run · V dollhouse · Esc frees the mouse':'Click the view to capture the mouse (or drag to look) · WASD walk · V dollhouse')
+  $('hint').textContent=mode==='walk'?(locked?'WASD walk · mouse look · wheel zoom (0 resets) · Shift run · V dollhouse · Esc frees the mouse':'Click the view to capture the mouse (or drag to look) · WASD walk · wheel zoom · V dollhouse')
     :'Drag to orbit · scroll to zoom · WASD pan · V back to walking';
   $('modeBtn').textContent=document.body.classList.contains('touch')?(mode==='walk'?'Dollhouse':'Walk'):(mode==='walk'?'Dollhouse view (V)':'Back to walking (V)');
 }
@@ -710,12 +713,18 @@ addEventListener('mouseup',()=>{drag=false;});
 addEventListener('mousemove',e=>{
   if(anim)return;
   if(mode==='walk'&&(locked||drag)){
-    player.yaw-=e.movementX*.0022;player.pitch=Math.max(-1.35,Math.min(1.35,player.pitch-e.movementY*.0022));
+    const ls=.0022*zoomCur;player.yaw-=e.movementX*ls;player.pitch=Math.max(-1.35,Math.min(1.35,player.pitch-e.movementY*ls));
   }else if(mode==='doll'&&drag){
     orbit.az-=e.movementX*.006;orbit.pol=Math.max(.05,Math.min(1.35,orbit.pol-e.movementY*.004));
   }
 });
-canvas.addEventListener('wheel',e=>{if(mode==='doll'){e.preventDefault();orbit.dist=Math.max(7,Math.min(48,orbit.dist*(1+e.deltaY*.0012)));}},{passive:false});
+canvas.addEventListener('wheel',e=>{
+  if(anim)return;e.preventDefault();
+  const dy=e.deltaMode===1?e.deltaY*33:e.deltaY;
+  if(mode==='doll')orbit.dist=Math.max(7,Math.min(48,orbit.dist*(1+dy*.0012)));
+  else zoomTarget=Math.max(ZOOM_MIN,Math.min(ZOOM_MAX,zoomTarget*(1+dy*.0012)));
+},{passive:false});
+addEventListener('keydown',e=>{if(e.code==='Digit0'&&mode==='walk')zoomTarget=1;});
 
 /* ---------- touch controls ---------- */
 const joy={x:0,y:0,run:false,id:null};
@@ -826,6 +835,7 @@ function step(dt){
     const moving=Math.hypot(player.vx,player.vz);player.t+=dt*moving*2.6;
     camera.position.set(player.x,1.6+Math.sin(player.t)*.012*Math.min(1,moving),player.z);
     camera.rotation.set(player.pitch,player.yaw,0,'YXZ');
+    if(Math.abs(zoomTarget-zoomCur)>1e-4){zoomCur+=(zoomTarget-zoomCur)*(1-Math.exp(-12*dt));if(Math.abs(zoomTarget-zoomCur)<1e-3)zoomCur=zoomTarget;camera.fov=walkFov();camera.updateProjectionMatrix();}
     const r=roomAt(ipx(player.x),ipy(player.z));$('room').textContent=r?r.name:'Outside';
     drawMini();
   }else{
